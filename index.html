@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Darmglück">
+<meta name="theme-color" content="#F5C5A3">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- iOS localStorage: funktioniert am besten wenn aus Home-Bildschirm gestartet -->
+<title>🌿 Darmglück</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ─── DESIGN TOKENS ─────────────────────────────────────────────── */
+:root {
+  --rose:     #E8927C;
+  --rose-dk:  #D4745C;
+  --peach:    #F5C5A3;
+  --cream:    #FDF6EE;
+  --cream-dk: #F7EDE0;
+  --sage:     #8BAF8D;
+  --sage-lt:  #C8DFC9;
+  --warm:     #6B4E3D;
+  --warm-lt:  #A47860;
+  --warm-pale:#EDD8CA;
+  --sky:      #A8C8D8;
+  --lav:      #C9B8D8;
+  --red:      #D97474;
+  --yellow:   #F5E0A0;
+  --text:     #3D2B1F;
+  --text-lt:  #7A5C4E;
+  --border:   #EDD8CA;
+  --white:    #FFFFFF;
+  --sh1: 0 2px 12px rgba(104,60,40,.10);
+  --sh2: 0 6px 28px rgba(104,60,40,.14);
+  --r:   16px;
+}
+
+/* ─── RESET ────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-tap-highlight-color:transparent;scroll-behavior:smooth;}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--cream);
+  color:var(--text);
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
+
+/* ─── LAYOUT ────────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100dvh;}
+
+/* TOP BAR */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,238,.92);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  padding:14px 18px 12px;
+  display:flex;align-items:center;gap:12px;
+}
+.topbar-logo{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--warm);flex:1;}
+.topbar-logo span{font-size:.7rem;font-weight:600;color:var(--warm-lt);display:block;letter-spacing:.03em;}
+.topbar-actions{display:flex;gap:8px;}
+.topbar-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:1.2rem;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;background:white;box-shadow:var(--sh1);
+  transition:transform .15s;
+}
+.topbar-btn:hover{transform:scale(1.1);}
+
+/* BOTTOM NAV */
+.bottomnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(253,246,238,.95);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:10px 4px 8px;
+  border:none;background:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;
+  font-size:.62rem;font-weight:700;
+  color:var(--text-lt);
+  transition:color .15s;
+  letter-spacing:.02em;
+}
+.nav-btn .nav-icon{
+  font-size:1.35rem;
+  transition:transform .2s;
+}
+.nav-btn.active{color:var(--rose);}
+.nav-btn.active .nav-icon{transform:scale(1.18);}
+
+/* MAIN SCROLL */
+.main{
+  flex:1;
+  overflow-y:auto;
+  padding:20px 16px 110px;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ─── COMPONENTS ────────────────────────────────────────────────── */
+
+/* Cards */
+.card{
+  background:var(--white);
+  border-radius:var(--r);
+  box-shadow:var(--sh1);
+  padding:18px;
+  margin-bottom:14px;
+  border:1px solid var(--border);
+  animation:fadeUp .3s ease both;
+}
+.card-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.05rem;color:var(--warm);
+  margin-bottom:12px;
+}
+.card-sub{font-size:.78rem;color:var(--text-lt);margin-bottom:12px;}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:10px 20px;border-radius:30px;border:none;
+  cursor:pointer;font-family:'Nunito',sans-serif;
+  font-size:.85rem;font-weight:700;
+  transition:all .2s;-webkit-tap-highlight-color:transparent;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--rose),var(--peach));
+  color:white;box-shadow:0 3px 14px rgba(232,146,124,.4);
+}
+.btn-primary:active{transform:scale(.96);}
+.btn-secondary{
+  background:var(--white);color:var(--warm);
+  border:1.5px solid var(--border);
+}
+.btn-secondary:active{background:var(--cream-dk);}
+.btn-sage{background:var(--sage);color:white;box-shadow:0 3px 10px rgba(139,175,141,.35);}
+.btn-sm{padding:7px 14px;font-size:.78rem;}
+.btn-xs{padding:5px 10px;font-size:.72rem;}
+.btn-full{width:100%;}
+.btn-icon{padding:10px;border-radius:50%;}
+
+/* Inputs */
+.input,.textarea,.select{
+  width:100%;padding:11px 14px;
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  font-family:'Nunito',sans-serif;font-size:.88rem;
+  background:var(--cream);color:var(--text);
+  outline:none;transition:border-color .2s;
+  -webkit-appearance:none;appearance:none;
+}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--rose);}
+.textarea{resize:vertical;min-height:80px;}
+.label{
+  display:block;font-size:.78rem;font-weight:700;
+  color:var(--warm-lt);margin-bottom:5px;
+}
+.field{margin-bottom:12px;}
+
+/* Tags */
+.tag{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:.72rem;font-weight:700;
+}
+.tag-g{background:#D6EDD7;color:#2D6B30;}
+.tag-y{background:#FDF0C0;color:#7A5800;}
+.tag-r{background:#FBDADA;color:#9B2222;}
+.tag-b{background:#D4E9F5;color:#1A5C80;}
+.tag-gr{background:#EBEBEB;color:#555;}
+.tag-p{background:#EDE4F5;color:#5A3580;}
+
+/* Chips */
+.chip{
+  display:inline-flex;align-items:center;
+  padding:6px 13px;border-radius:20px;
+  border:1.5px solid var(--border);
+  cursor:pointer;font-size:.78rem;font-weight:600;
+  color:var(--text-lt);background:white;
+  transition:all .15s;margin:3px;
+  -webkit-tap-highlight-color:transparent;
+}
+.chip.sel{background:var(--rose);color:white;border-color:var(--rose);}
+
+/* Progress */
+.pbar-wrap{background:var(--warm-pale);border-radius:20px;height:7px;overflow:hidden;}
+.pbar{height:100%;border-radius:20px;
+  background:linear-gradient(90deg,var(--rose),var(--peach));
+  transition:width .5s ease;}
+
+/* Section Header */
+.sect-hd{
+  font-size:.68rem;font-weight:800;
+  color:var(--warm-lt);letter-spacing:.08em;
+  text-transform:uppercase;margin:18px 0 8px;
+}
+
+/* ─── OVERLAYS ──────────────────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(61,43,31,.5);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:flex-end;
+  padding:0;
+  animation:fadeIn .2s ease;
+}
+.overlay.centered{align-items:center;padding:16px;}
+.sheet{
+  background:white;
+  border-radius:24px 24px 0 0;
+  padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+  width:100%;
+  max-height:92dvh;
+  overflow-y:auto;
+  animation:slideUp .3s cubic-bezier(.34,1.2,.64,1);
+}
+.sheet.modal-sheet{
+  border-radius:24px;
+  max-height:88dvh;
+  width:100%;
+  max-width:520px;
+  margin:auto;
+  animation:scaleIn .25s ease;
+}
+.sheet-handle{
+  width:40px;height:4px;
+  background:var(--warm-pale);border-radius:4px;
+  margin:0 auto 18px;
+}
+
+/* ─── PAGE TRANSITIONS ──────────────────────────────────────────── */
+.page{animation:fadeUp .25s ease both;}
+
+/* ─── DASHBOARD ─────────────────────────────────────────────────── */
+.dash-hero{
+  background:linear-gradient(135deg,#FBE9DC 0%,#F2D5C5 50%,#EDD8D0 100%);
+  border-radius:20px;
+  padding:20px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+.dash-hero::after{
+  content:'🌿';
+  position:absolute;right:-10px;top:-10px;
+  font-size:5rem;opacity:.12;
+  transform:rotate(20deg);
+}
+.dash-hero h2{font-size:1.4rem;color:var(--warm);margin-bottom:4px;}
+.dash-hero p{font-size:.82rem;color:var(--warm-lt);}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat-box{
+  background:white;border-radius:14px;padding:12px 10px;
+  text-align:center;box-shadow:var(--sh1);border:1px solid var(--border);
+}
+.stat-val{font-size:1.5rem;font-weight:800;color:var(--rose);}
+.stat-lbl{font-size:.65rem;color:var(--text-lt);font-weight:600;margin-top:2px;}
+
+.quick-ref{
+  background:linear-gradient(135deg,#EDF5EE,#D8EDD9);
+  border-radius:14px;padding:14px;margin-bottom:10px;
+}
+
+/* ─── FOOD LIST ─────────────────────────────────────────────────── */
+.food-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:9px;
+}
+.food-card{
+  background:var(--cream);
+  border-radius:13px;padding:12px;
+  border:1.5px solid var(--border);
+  cursor:pointer;
+  transition:border-color .2s,box-shadow .2s;
+}
+.food-card:active{border-color:var(--rose);box-shadow:0 3px 12px rgba(232,146,124,.2);}
+
+/* ─── CHAT ──────────────────────────────────────────────────────── */
+.chat-area{
+  display:flex;flex-direction:column;gap:10px;
+  max-height:55dvh;overflow-y:auto;
+  padding:4px 2px;
+}
+.msg{display:flex;gap:8px;align-items:flex-start;animation:fadeUp .25s ease;}
+.msg.user{flex-direction:row-reverse;}
+.bubble{
+  max-width:78%;padding:10px 14px;border-radius:18px;
+  font-size:.85rem;line-height:1.55;white-space:pre-wrap;
+}
+.msg.ai .bubble{
+  background:var(--cream);border:1px solid var(--border);
+  color:var(--text);border-radius:4px 18px 18px 18px;
+}
+.msg.user .bubble{
+  background:linear-gradient(135deg,var(--rose),var(--peach));
+  color:white;border-radius:18px 4px 18px 18px;
+}
+.avatar{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;flex-shrink:0;
+}
+.msg.ai .avatar{background:var(--peach);}
+.msg.user .avatar{background:var(--sage-lt);}
+.chat-input-row{display:flex;gap:8px;margin-top:10px;align-items:flex-end;}
+.chat-input-row .input{flex:1;}
+
+/* ─── WEEK GRID ─────────────────────────────────────────────────── */
+.week-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.week-grid{
+  display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));
+  gap:8px;min-width:800px;
+}
+.day-col{
+  background:var(--cream);border-radius:12px;
+  padding:9px 8px;border:1px solid var(--border);
+}
+.day-lbl{
+  font-size:.68rem;font-weight:800;text-align:center;
+  color:var(--warm-lt);margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.meal-slot{
+  background:white;border-radius:8px;
+  padding:7px;margin-bottom:4px;
+  font-size:.7rem;border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;
+  min-height:44px;
+}
+.meal-slot:active{border-color:var(--rose);}
+.meal-slot.filled{
+  background:linear-gradient(135deg,#FFF0E8,#FFE4D4);
+  border-color:var(--peach);
+}
+.meal-slot .mtype{
+  font-size:.6rem;color:var(--warm-lt);
+  font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:2px;
+}
+
+/* ─── CYCLE ─────────────────────────────────────────────────────── */
+.cycle-strip{display:flex;gap:6px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch;}
+.c-phase{
+  flex-shrink:0;
+  text-align:center;padding:12px 10px;
+  border-radius:14px;border:2px solid transparent;
+  cursor:pointer;transition:all .2s;
+  min-width:78px;
+}
+.c-phase.active{
+  border-color:var(--rose);
+  box-shadow:0 3px 12px rgba(232,146,124,.3);
+}
+
+/* ─── REPORT ─────────────────────────────────────────────────────── */
+.rep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rep-box{
+  background:var(--cream);border-radius:12px;
+  padding:12px;text-align:center;
+  border:1px solid var(--border);
+}
+
+/* ─── SHOPPING ───────────────────────────────────────────────────── */
+.shop-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--border);
+}
+.shop-item:last-child{border-bottom:none;}
+.shop-item.done span{text-decoration:line-through;color:var(--text-lt);}
+
+/* ─── TAGESCHECK ─────────────────────────────────────────────────── */
+.tc-overlay{
+  position:fixed;inset:0;z-index:600;
+  background:linear-gradient(160deg,rgba(251,233,220,.97),rgba(242,213,197,.97));
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  animation:fadeIn .3s ease;
+}
+.tc-card{
+  background:white;border-radius:28px;
+  padding:28px 24px;width:100%;max-width:480px;
+  box-shadow:0 20px 60px rgba(61,43,31,.2);
+  animation:scaleIn .35s cubic-bezier(.34,1.2,.64,1);
+}
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────────── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{
+  from{transform:translateY(100%);}
+  to{transform:translateY(0);}
+}
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(.92);}
+  to{opacity:1;transform:scale(1);}
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--peach);border-radius:10px;}
+
+/* ─── RANGE INPUT ────────────────────────────────────────────────── */
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;
+  height:6px;border-radius:10px;
+  background:var(--warm-pale);outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--rose);cursor:pointer;
+  box-shadow:0 2px 8px rgba(232,146,124,.5);
+}
+input[type=checkbox]{
+  width:18px;height:18px;
+  accent-color:var(--sage);cursor:pointer;
+  flex-shrink:0;
+}
+
+/* ─── UTILS ──────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.flex{display:flex;gap:8px;}
+.flex-c{display:flex;gap:8px;align-items:center;}
+.flex-sb{display:flex;justify-content:space-between;align-items:center;}
+.mt4{margin-top:4px;} .mt8{margin-top:8px;} .mt12{margin-top:12px;} .mt16{margin-top:16px;}
+.mb4{margin-bottom:4px;} .mb8{margin-bottom:8px;} .mb12{margin-bottom:12px;}
+.fs-xs{font-size:.72rem;} .fs-sm{font-size:.82rem;} .fs-md{font-size:.9rem;}
+.fw-7{font-weight:700;} .fw-8{font-weight:800;}
+.c-warm{color:var(--warm);} .c-lt{color:var(--text-lt);} .c-rose{color:var(--rose);}
+.ta-c{text-align:center;}
+.w100{width:100%;}
+.r8{border-radius:8px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      🌿 Darmglück
+      <span id="topbar-subtitle">Dein FODMAP & Reflux Begleiter</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="openTagescheck()" title="Tagescheck">📋</button>
+      <button class="topbar-btn" onclick="navigate('bericht')" title="Bericht">📊</button>
+    </div>
+  </div>
+
+  <div id="storage-banner" style="display:none;background:#D97474;color:white;text-align:center;padding:8px 14px;font-size:.78rem;font-weight:700;line-height:1.5">
+    ⚠️ Daten können nicht dauerhaft gespeichert werden. Tipp: Safari → Einstellungen → Datenschutz → "Cross-Site Tracking verhindern" ausschalten.
+  </div>
+  <main class="main" id="main"></main>
+
+  <nav class="bottomnav" id="bottomnav">
+    <button class="nav-btn active" data-page="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">🏠</span>Start
+    </button>
+    <button class="nav-btn" data-page="lebensmittel" onclick="navigate('lebensmittel')">
+      <span class="nav-icon">🥗</span>Essen
+    </button>
+    <button class="nav-btn" data-page="tracking" onclick="navigate('tracking')">
+      <span class="nav-icon">📝</span>Tracking
+    </button>
+    <button class="nav-btn" data-page="kochbuch" onclick="navigate('kochbuch')">
+      <span class="nav-icon">📖</span>Rezepte
+    </button>
+    <button class="nav-btn" data-page="wochenplan" onclick="navigate('wochenplan')">
+      <span class="nav-icon">📅</span>Woche
+    </button>
+    <button class="nav-btn" data-page="zyklus" onclick="navigate('zyklus')">
+      <span class="nav-icon">🌸</span>Zyklus
+    </button>
+    <button class="nav-btn" data-page="chat" onclick="navigate('chat')">
+      <span class="nav-icon">💬</span>KI-Chat
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+// ── STORAGE ────────────────────────────────────────────────────────
+// ── SPEICHER: IndexedDB (Hauptspeicher) + localStorage (Cache) ──────
+// IndexedDB funktioniert auf iOS Safari/Netlify zuverlässig.
+// localStorage dient als synchroner schneller Cache beim Start.
+
+const DB_NAME = 'darmglueck_db';
+const DB_STORE = 'kv';
+let _db = null;
+const _cache = {}; // synchroner In-Memory-Cache für sofortigen Zugriff
+
+// IndexedDB öffnen
+function _openDB() {
+  return new Promise((resolve, reject) => {
+    if(_db) { resolve(_db); return; }
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE);
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Async speichern in IndexedDB + sofort in localStorage als Backup
+async function _idbSet(k, v) {
+  // localStorage als sofortiges Backup (falls IDB verzögert)
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+  // Primärer Speicher: IndexedDB
+  try {
+    const db = await _openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      tx.objectStore(DB_STORE).put(v, k);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch(e) { return false; }
+}
+
+// Synchron aus localStorage lesen (für Startup), async aus IDB
+function _syncGet(k, d) {
+  // Cache hat Priorität
+  if(k in _cache) return _cache[k];
+  // localStorage als Fallback beim Start
+  try {
+    const v = localStorage.getItem(k);
+    if(v !== null) {
+      const parsed = JSON.parse(v);
+      _cache[k] = parsed;
+      return parsed;
+    }
+  } catch(e) {}
+  return d;
+}
+
+// localStorage beim Start mit IDB synchronisieren
+async function _syncFromIDB() {
+  try {
+    const db = await _openDB();
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const store = tx.objectStore(DB_STORE);
+    return new Promise((resolve) => {
+      const req = store.getAll();
+      const kreq = store.getAllKeys();
+      Promise.all([
+        new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r([]); }),
+        new Promise(r => { kreq.onsuccess = () => r(kreq.result); kreq.onerror = () => r([]); }),
+      ]).then(([vals, keys]) => {
+        keys.forEach((k, i) => {
+          _cache[k] = vals[i];
+          try { localStorage.setItem(k, JSON.stringify(vals[i])); } catch(e) {}
+        });
+        resolve(true);
+      });
+    });
+  } catch(e) { return false; }
+}
+
+const S = {
+  get: (k, d=[]) => _syncGet(k, d),
+  set: (k, v) => { _cache[k] = v; _idbSet(k, v); },
+  isTemp: () => false,
+};
+
+// App-Version: Key-Migration bei Update
+const APP_VERSION = '1.6';
+(async () => {
+  // Erst IDB→localStorage synchronisieren
+  await _syncFromIDB();
+
+  if(_syncGet('dg_appversion','0') !== APP_VERSION) {
+    // camelCase → lowercase Migration
+    const migrate = {
+      'dg_zyklusStart':   'dg_zyklusstart',
+      'dg_zyklusLaenge':  'dg_zykluslaenge',
+      'dg_letzterCheck':  'dg_letztercheck',
+      'dg_symptomLogs':   'dg_symptome',
+      'dg_chatHistory':   'dg_chat',
+      'dg_eigeneRezepte': 'dg_eigenerezepte',
+    };
+    for(const [oldKey, newKey] of Object.entries(migrate)) {
+      const val = _syncGet(oldKey, null);
+      if(val !== null) {
+        S.set(newKey, val);
+        try { localStorage.removeItem(oldKey); } catch(e) {}
+      }
+    }
+    S.set('dg_letztercheck', '');
+    S.set('dg_appversion', APP_VERSION);
+  }
+
+  // State mit aktuellen (ggf. migrierten) Werten neu laden
+  state.mahlzeiten   = S.get('dg_mahlzeiten', []);
+  state.symptomLogs  = S.get('dg_symptome', []);
+  state.wochenplan   = S.get('dg_wochenplan', {});
+  state.einkaufsliste= S.get('dg_einkauf', []);
+  state.eigeneRezepte= S.get('dg_eigenerezepte', []);
+  state.zyklusStart  = S.get('dg_zyklusstart', '');
+  state.zyklusLaenge = S.get('dg_zykluslaenge', 28);
+  state.chatHistory  = S.get('dg_chat', []);
+  state.letzterCheck = S.get('dg_letztercheck', '');
+  state.toleranz     = S.get('dg_toleranz', {});
+
+  // App starten
+  init();
+})();
+
+// ── STATE ───────────────────────────────────────────────────────────
+let state = {
+  page: 'dashboard',
+  mahlzeiten:    S.get('dg_mahlzeiten',[]),
+  symptomLogs:   S.get('dg_symptome',[]),
+  wochenplan:    S.get('dg_wochenplan',{}),
+  einkaufsliste: S.get('dg_einkauf',[]),
+  eigeneRezepte: S.get('dg_eigenerezepte',[]),
+  zyklusStart:   S.get('dg_zyklusstart',''),
+  zyklusLaenge:  S.get('dg_zykluslaenge',28),
+  chatHistory:   S.get('dg_chat',[]),
+  letzterCheck:  S.get('dg_letztercheck',''),
+  tcDaten:       S.get('dg_tcdaten',{}),
+  toleranz:      S.get('dg_toleranz',{}),
+};
+
+// Alias-Map: state-Key → storage-Key
+const KEY_ALIAS = {
+  symptomlogs:   'dg_symptome',
+  chathistory:   'dg_chat',
+  einkaufsliste: 'dg_einkauf',
+};
+const save = (key, val) => {
+  state[key] = val;
+  const lk = key.toLowerCase();
+  const storageKey = KEY_ALIAS[lk] || ('dg_' + lk);
+  S.set(storageKey, val);
+};
+
+// ── DATA ────────────────────────────────────────────────────────────
+// Quellen: Monash University FODMAP App, FODMAP-Kompass (Univ. München),
+// Reizdarmblog 2026, Harvard Health, Cleveland Clinic, NHS, fodmap-info.de
+// f = FODMAP: g=grün/OK, y=gelb/Maßen, r=rot/meiden
+// r = Reflux: g=grün/OK, y=gelb/Maßen, r=rot/meiden
+const LEBENSMITTEL = [
+  // ── GEMÜSE ────────────────────────────────────────────────────
+  {name:"Zucchini",kat:"Gemüse",f:"g",r:"g",e:"🥒",info:"Ideal für Reizdarm & Reflux. Vielseitig einsetzbar."},
+  {name:"Möhren / Karotten",kat:"Gemüse",f:"g",r:"g",e:"🥕",info:"Doppelt grün – perfektes Alltagsgemüse."},
+  {name:"Paprika (rot)",kat:"Gemüse",f:"g",r:"y",e:"🫑",info:"Low-FODMAP. Bei Reflux in kleinen Mengen OK."},
+  {name:"Paprika (grün)",kat:"Gemüse",f:"g",r:"y",e:"🫑",info:"Low-FODMAP. Etwas schärfer – bei Reflux Menge beachten."},
+  {name:"Paprika (gelb)",kat:"Gemüse",f:"g",r:"y",e:"🫑",info:"Low-FODMAP. Mild, gut verträglich."},
+  {name:"Tomaten (frisch)",kat:"Gemüse",f:"y",r:"r",e:"🍅",info:"Moderate FODMAPs. Tomaten sind Reflux-Trigger durch Säure."},
+  {name:"Tomaten (Sauce/Dose)",kat:"Gemüse",f:"r",r:"r",e:"🍅",info:"High-FODMAP in größeren Mengen. Starker Reflux-Trigger."},
+  {name:"Kirschtomaten (5 Stk.)",kat:"Gemüse",f:"g",r:"r",e:"🍅",info:"Kleine Menge Low-FODMAP, aber Reflux-Trigger bleiben."},
+  {name:"Spinat",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Doppelt grün, sehr nährstoffreich, ideal bei Reizdarm."},
+  {name:"Mangold",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP und reflux-freundlich."},
+  {name:"Gurke",kat:"Gemüse",f:"g",r:"g",e:"🥒",info:"Sehr gut verträglich, kühlend und bekömmlich."},
+  {name:"Kartoffeln",kat:"Gemüse",f:"g",r:"g",e:"🥔",info:"Doppelt grün – Basislebensmittel, gut für Magen & Darm."},
+  {name:"Süßkartoffel (½ Tasse)",kat:"Gemüse",f:"y",r:"g",e:"🍠",info:"Moderate FODMAPs in größeren Mengen. Reflux-freundlich."},
+  {name:"Kürbis (Butternut, ¼ Tasse)",kat:"Gemüse",f:"g",r:"g",e:"🎃",info:"Kleine Portion Low-FODMAP. Wärmend und gut verträglich."},
+  {name:"Kürbis (Hokkaido)",kat:"Gemüse",f:"g",r:"g",e:"🎃",info:"Low-FODMAP, reflux-freundlich, reich an Beta-Carotin."},
+  {name:"Brokkoli (Röschen, <75g)",kat:"Gemüse",f:"g",r:"g",e:"🥦",info:"Kleine Portion Low-FODMAP. Portionsgröße beachten!"},
+  {name:"Brokkoli (>75g)",kat:"Gemüse",f:"y",r:"g",e:"🥦",info:"Größere Mengen können FODMAPs erhöhen."},
+  {name:"Blumenkohl",kat:"Gemüse",f:"r",r:"g",e:"⚪",info:"High-FODMAP (Fruktane + Mannitol). Reflux kein Problem."},
+  {name:"Zwiebeln (alle Sorten)",kat:"Gemüse",f:"r",r:"r",e:"🧅",info:"Sehr hoher Fructan-Gehalt. Auch Reflux-Trigger. Meiden!"},
+  {name:"Knoblauch",kat:"Gemüse",f:"r",r:"r",e:"🧄",info:"Höchster FODMAP-Gehalt aller Gemüse. Starker Reflux-Trigger."},
+  {name:"Knoblauchöl (selbst gemacht)",kat:"Gemüse",f:"g",r:"y",e:"🧄",info:"FODMAPs gehen nicht ins Öl über – Low-FODMAP-Alternative!"},
+  {name:"Frühlingszwiebeln (nur Grün)",kat:"Gemüse",f:"g",r:"y",e:"🌿",info:"Nur das Grüne ist Low-FODMAP! Weiße Teile meiden."},
+  {name:"Lauch (nur Spitzen/Grün)",kat:"Gemüse",f:"g",r:"y",e:"🌿",info:"Nur die grünen Spitzen Low-FODMAP. Weiße Teile meiden."},
+  {name:"Schnittlauch",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, Knoblauch/Zwiebel-Alternative für Aroma."},
+  {name:"Kopfsalat / Römersalat",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Doppelt grün, gut verträglich."},
+  {name:"Eisbergsalat",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP, gut verträglich."},
+  {name:"Rucola",kat:"Gemüse",f:"g",r:"y",e:"🥗",info:"Low-FODMAP. Leicht bitter – bei Reflux Menge beachten."},
+  {name:"Radicchio",kat:"Gemüse",f:"g",r:"y",e:"🥗",info:"Low-FODMAP. Bittere Anteile ggf. bei Reflux beachten."},
+  {name:"Chicorée",kat:"Gemüse",f:"g",r:"y",e:"🥬",info:"Low-FODMAP in kleinen Mengen (< 75g)."},
+  {name:"Feldsalat / Rapunzel",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Sehr gut verträglich, doppelt grün."},
+  {name:"Aubergine",kat:"Gemüse",f:"g",r:"y",e:"🍆",info:"Low-FODMAP. Bei Reflux in Maßen – leicht säurebildend."},
+  {name:"Pastinaken",kat:"Gemüse",f:"g",r:"g",e:"🥕",info:"Doppelt grün, süßlich, gut für Suppen."},
+  {name:"Rote Bete (<40g)",kat:"Gemüse",f:"g",r:"g",e:"🫒",info:"Kleine Menge Low-FODMAP. Größere Mengen High-FODMAP."},
+  {name:"Rote Bete (>40g)",kat:"Gemüse",f:"r",r:"g",e:"🫒",info:"High-FODMAP in größeren Portionen."},
+  {name:"Radieschen",kat:"Gemüse",f:"g",r:"y",e:"🌶️",info:"Low-FODMAP. Scharf – bei Reflux evtl. sparsam."},
+  {name:"Rettich (weiß)",kat:"Gemüse",f:"g",r:"y",e:"🌿",info:"Low-FODMAP. Bei Reflux in Maßen."},
+  {name:"Kohlrabi",kat:"Gemüse",f:"g",r:"g",e:"🥦",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Grüne Bohnen",kat:"Gemüse",f:"g",r:"g",e:"🫘",info:"Doppelt grün. Bis 75g problemlos."},
+  {name:"Erbsen (TK, aufgetaut, <54g)",kat:"Gemüse",f:"g",r:"g",e:"🫛",info:"Kleine Portion Low-FODMAP. Größere Mengen High-FODMAP."},
+  {name:"Erbsen (Konserve, <53g)",kat:"Gemüse",f:"g",r:"g",e:"🫛",info:"Abgespült Low-FODMAP in kleiner Menge."},
+  {name:"Zuckerschoten (<75g)",kat:"Gemüse",f:"g",r:"g",e:"🫛",info:"Low-FODMAP bis 75g. Knackig und bekömmlich."},
+  {name:"Bambussprossen",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich, gut für Asia-Gerichte."},
+  {name:"Alfalfasprossen",kat:"Gemüse",f:"g",r:"g",e:"🌱",info:"Low-FODMAP, sehr gut verträglich."},
+  {name:"Sojasprossen",kat:"Gemüse",f:"g",r:"g",e:"🌱",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Fenchel (Knolle, <48g)",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Kleine Menge Low-FODMAP. Beruhigend für den Darm."},
+  {name:"Fenchel (>48g)",kat:"Gemüse",f:"r",r:"g",e:"🌿",info:"Größere Menge High-FODMAP (Fruktane)."},
+  {name:"Staudensellerie (Stange)",kat:"Gemüse",f:"r",r:"g",e:"🌿",info:"High-FODMAP (Mannitol). Reflux kein Problem."},
+  {name:"Knollensellerie (<75g)",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Low-FODMAP in kleiner Portion."},
+  {name:"Spargel (weiß/grün)",kat:"Gemüse",f:"r",r:"g",e:"🌱",info:"High-FODMAP (Fruktane). Reflux kein Problem."},
+  {name:"Artischocken",kat:"Gemüse",f:"r",r:"g",e:"🌿",info:"Sehr High-FODMAP. In Öl eingelegt (<10g) evtl. OK."},
+  {name:"Artischockenherzen (Salzlake, <50g)",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Kleine Menge in Salzlake Low-FODMAP."},
+  {name:"Mais (frisch, ½ Kolben)",kat:"Gemüse",f:"g",r:"y",e:"🌽",info:"Low-FODMAP in normaler Portion. Reflux in Maßen."},
+  {name:"Mais (Konserve, abgespült)",kat:"Gemüse",f:"g",r:"y",e:"🌽",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Kürbiskerne",kat:"Gemüse",f:"g",r:"g",e:"🎃",info:"Low-FODMAP, reflux-freundlich, reich an Zink."},
+  {name:"Pilze (Champignons)",kat:"Gemüse",f:"r",r:"g",e:"🍄",info:"High-FODMAP (Mannitol). Meiden bei Reizdarm."},
+  {name:"Pilze (Austernpilze, <75g)",kat:"Gemüse",f:"g",r:"g",e:"🍄",info:"Low-FODMAP in kleiner Menge – Ausnahme unter Pilzen!"},
+  {name:"Ingwer (frisch, <5g)",kat:"Gemüse",f:"g",r:"g",e:"🫚",info:"Entzündungshemmend, beruhigt Magen UND Darm. Doppelt wertvoll!"},
+  {name:"Chili (rot/grün, <28g)",kat:"Gemüse",f:"g",r:"r",e:"🌶️",info:"Low-FODMAP, aber Reflux-Trigger durch Capsaicin."},
+  {name:"Kimchi (<47g)",kat:"Gemüse",f:"g",r:"r",e:"🫙",info:"Low-FODMAP in kleiner Menge, aber fermentiert + scharf → Reflux."},
+  {name:"Gewürzgurken",kat:"Gemüse",f:"g",r:"y",e:"🫙",info:"Low-FODMAP. Essigsäure kann bei Reflux leicht reizen."},
+  {name:"Topinambur",kat:"Gemüse",f:"r",r:"y",e:"🥔",info:"Sehr High-FODMAP (Fruktane). Meiden bei Reizdarm."},
+  {name:"Süßkartoffel (>75g)",kat:"Gemüse",f:"r",r:"g",e:"🍠",info:"Größere Portionen High-FODMAP."},
+  {name:"Wirsing / Weißkohl",kat:"Gemüse",f:"r",r:"y",e:"🥬",info:"High-FODMAP. Kohl kann auch Blähungen + Reflux verstärken."},
+  {name:"Grünkohl (<140g)",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP bis 140g. Sehr nährstoffreich."},
+  {name:"Pak Choi / Chinakohl",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP, reflux-freundlich, ideal für Asia-Küche."},
+  {name:"Avocado (⅛ Frucht)",kat:"Gemüse",f:"g",r:"y",e:"🥑",info:"Kleine Menge Low-FODMAP. Fettgehalt bei Reflux beachten."},
+  {name:"Avocado (½ Frucht)",kat:"Gemüse",f:"r",r:"r",e:"🥑",info:"Größere Menge High-FODMAP (Sorbitol). Fett → Reflux."},
+  {name:"Oliven (15 Stk.)",kat:"Gemüse",f:"g",r:"y",e:"🫒",info:"Low-FODMAP. Fettgehalt bei Reflux moderat halten."},
+  {name:"Brunnenkresse",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Cornichons (<28g)",kat:"Gemüse",f:"g",r:"y",e:"🫙",info:"Low-FODMAP in kleiner Menge."},
+
+  // ── OBST ───────────────────────────────────────────────────────
+  {name:"Banane (unreif/grün)",kat:"Obst",f:"g",r:"g",e:"🍌",info:"Doppelt grün. Unreife Bananen haben weniger Zucker → besser verträglich."},
+  {name:"Banane (reif, 1 mittel)",kat:"Obst",f:"y",r:"g",e:"🍌",info:"Bei Reife steigt Fruktosegehalt. Reflux-freundlich."},
+  {name:"Erdbeeren (10 Stk.)",kat:"Obst",f:"g",r:"y",e:"🍓",info:"Low-FODMAP. Bei Reflux in Maßen – leicht sauer."},
+  {name:"Blaubeeren (<40g)",kat:"Obst",f:"g",r:"y",e:"🫐",info:"Low-FODMAP bis 40g. Bei Reflux in Maßen."},
+  {name:"Himbeeren (<60g)",kat:"Obst",f:"y",r:"y",e:"🍓",info:"Moderate FODMAPs ab 60g. Bei Reflux leicht sauer."},
+  {name:"Brombeeren",kat:"Obst",f:"g",r:"y",e:"🫐",info:"Low-FODMAP. Leicht sauer – bei Reflux in Maßen."},
+  {name:"Preiselbeeren",kat:"Obst",f:"g",r:"y",e:"🫐",info:"Low-FODMAP. Säuregehalt bei Reflux beachten."},
+  {name:"Kiwi (2 Stk.)",kat:"Obst",f:"g",r:"y",e:"🥝",info:"Low-FODMAP. Leicht sauer, bei Reflux in Maßen."},
+  {name:"Trauben (grün/rot)",kat:"Obst",f:"g",r:"y",e:"🍇",info:"Low-FODMAP. Leicht sauer – bei Reflux in Maßen."},
+  {name:"Cantaloupe-Melone",kat:"Obst",f:"g",r:"g",e:"🍈",info:"Doppelt grün! Alkalisch und sehr gut verträglich."},
+  {name:"Honigmelone",kat:"Obst",f:"g",r:"g",e:"🍈",info:"Doppelt grün, alkalisch, ideal bei Reflux."},
+  {name:"Äpfel",kat:"Obst",f:"r",r:"y",e:"🍎",info:"High-FODMAP (Fruktose + Sorbitol). Bei Reflux weniger problematisch als bei Reizdarm."},
+  {name:"Birnen",kat:"Obst",f:"r",r:"y",e:"🍐",info:"High-FODMAP (Fruktose + Sorbitol). Bei Reflux in Maßen."},
+  {name:"Mango",kat:"Obst",f:"r",r:"y",e:"🥭",info:"High-FODMAP (Fruktose). Bei Reflux in Maßen OK."},
+  {name:"Orangen",kat:"Obst",f:"g",r:"r",e:"🍊",info:"Low-FODMAP, aber stark säurehaltig → Reflux-Trigger."},
+  {name:"Mandarinen / Clementinen",kat:"Obst",f:"g",r:"r",e:"🍊",info:"Low-FODMAP, aber Zitrusfrucht → Reflux-Trigger."},
+  {name:"Grapefruit (½)",kat:"Obst",f:"g",r:"r",e:"🍊",info:"Low-FODMAP, aber sehr säurehaltig → starker Reflux-Trigger."},
+  {name:"Zitronen (Saft, wenig)",kat:"Obst",f:"g",r:"r",e:"🍋",info:"Low-FODMAP, aber stark säurehaltig. Als Würze sparsam OK."},
+  {name:"Limette (Saft, wenig)",kat:"Obst",f:"g",r:"r",e:"🍋",info:"Low-FODMAP, sehr sauer – sparsam als Würze."},
+  {name:"Ananas",kat:"Obst",f:"g",r:"r",e:"🍍",info:"Low-FODMAP, aber Bromelain + Säure → Reflux-Trigger."},
+  {name:"Wassermelone",kat:"Obst",f:"r",r:"y",e:"🍉",info:"High-FODMAP (Fruktose). Reflux OK in kleinen Mengen."},
+  {name:"Papaya",kat:"Obst",f:"g",r:"g",e:"🍈",info:"Low-FODMAP, reflux-freundlich, förderlich für Verdauung."},
+  {name:"Passionsfrucht (2 Stk.)",kat:"Obst",f:"g",r:"y",e:"🍈",info:"Low-FODMAP. Leicht sauer, bei Reflux in Maßen."},
+  {name:"Sternfrucht (Carambola)",kat:"Obst",f:"g",r:"y",e:"⭐",info:"Low-FODMAP. Leicht sauer."},
+  {name:"Kirschen",kat:"Obst",f:"r",r:"y",e:"🍒",info:"High-FODMAP (Sorbitol + Fruktose). Bei Reflux OK."},
+  {name:"Pfirsich",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbitol). Bei Reflux in Maßen."},
+  {name:"Pflaume",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbitol). Wirkt abführend."},
+  {name:"Aprikose",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbitol + Fruktose)."},
+  {name:"Nektarine",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbitol)."},
+  {name:"Feigen (frisch)",kat:"Obst",f:"r",r:"y",e:"🍈",info:"High-FODMAP (Fruktose). Vorsicht!"},
+  {name:"Getrocknete Früchte allg.",kat:"Obst",f:"r",r:"y",e:"🍇",info:"High-FODMAP durch Fruktose-Konzentration. Meiden."},
+  {name:"Kokosnuss-Fleisch (<½ Tasse)",kat:"Obst",f:"g",r:"y",e:"🥥",info:"Kleine Menge Low-FODMAP. Fett bei Reflux beachten."},
+  {name:"Datteln",kat:"Obst",f:"r",r:"y",e:"🫙",info:"High-FODMAP (Fruktose). Max. 1 Stk. bei Langzeiternährung."},
+
+  // ── GETREIDE & BROT ───────────────────────────────────────────
+  {name:"Reis (weiß, gekocht)",kat:"Getreide",f:"g",r:"g",e:"🍚",info:"Doppelt grün. Basisnahrungsmittel, sehr gut verträglich."},
+  {name:"Reis (Basmati)",kat:"Getreide",f:"g",r:"g",e:"🍚",info:"Doppelt grün, besonders bekömmlich."},
+  {name:"Reis (braun / Vollkorn)",kat:"Getreide",f:"g",r:"g",e:"🍚",info:"Low-FODMAP, reflux-freundlich, mehr Ballaststoffe."},
+  {name:"Reisnudeln",kat:"Getreide",f:"g",r:"g",e:"🍝",info:"Doppelt grün. Ideal für Low-FODMAP-Küche."},
+  {name:"Reismehl",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Low-FODMAP Mehlalternative."},
+  {name:"Quinoa",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Doppelt grün. Proteinreich, vollständige Aminosäuren."},
+  {name:"Hirse",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Doppelt grün. Glutenfrei und gut verträglich."},
+  {name:"Polenta / Maisgrieß",kat:"Getreide",f:"g",r:"g",e:"🌽",info:"Doppelt grün. Glutenfrei, leicht verdaulich."},
+  {name:"Maisnudeln",kat:"Getreide",f:"g",r:"g",e:"🌽",info:"Low-FODMAP, glutenfreie Nudelversion."},
+  {name:"Buchweizen",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Doppelt grün. Trotz Name kein Weizen – glutenfrei."},
+  {name:"Buchweizennudeln",kat:"Getreide",f:"g",r:"g",e:"🍝",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Haferflocken (glutenfreie, <52g)",kat:"Getreide",f:"g",r:"g",e:"🥣",info:"Low-FODMAP bis 52g. Glutenfreie Variante wichtig!"},
+  {name:"Haferflocken (normale)",kat:"Getreide",f:"y",r:"g",e:"🥣",info:"Moderate FODMAPs durch Kontamination. Lieber glutenfreie Variante."},
+  {name:"Glutenfreies Brot",kat:"Getreide",f:"g",r:"g",e:"🍞",info:"Doppelt grün. Auf Zutaten achten (keine Zwiebeln/Knoblauch!)."},
+  {name:"Sauerteigbrot (Dinkel, traditional)",kat:"Getreide",f:"g",r:"y",e:"🍞",info:"Langer Fermentationsprozess baut FODMAPs ab. Portionsgröße beachten."},
+  {name:"Sauerteigbrot (Weizen)",kat:"Getreide",f:"y",r:"y",e:"🍞",info:"Traditioneller Sauerteig reduziert FODMAPs. Kleine Portion testen."},
+  {name:"Weizenbrot (normal)",kat:"Getreide",f:"r",r:"y",e:"🍞",info:"High-FODMAP (Fruktane). Bei Reflux mäßig problematisch."},
+  {name:"Roggenknäckebrot",kat:"Getreide",f:"r",r:"y",e:"🍞",info:"High-FODMAP (Fruktane)."},
+  {name:"Couscous",kat:"Getreide",f:"r",r:"y",e:"🌾",info:"High-FODMAP (Weizen-Fruktane). Meiden."},
+  {name:"Bulgur",kat:"Getreide",f:"r",r:"y",e:"🌾",info:"High-FODMAP (Weizen-Fruktane). Durch Hirse/Quinoa ersetzen."},
+  {name:"Weizenpasta",kat:"Getreide",f:"r",r:"y",e:"🍝",info:"High-FODMAP. Durch Reis- oder Maisnudeln ersetzen."},
+  {name:"Dinkel (Yeasttbread)",kat:"Getreide",f:"r",r:"y",e:"🌾",info:"Dinkel mit Hefe: High-FODMAP. Sauerteig-Dinkel ist verträglicher."},
+  {name:"Popcorn (ungesüßt, <7 Tassen)",kat:"Getreide",f:"g",r:"g",e:"🍿",info:"Low-FODMAP in normaler Menge. Reflux-freundlich."},
+  {name:"Reiswaffeln",kat:"Getreide",f:"g",r:"g",e:"🍘",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Maiswaffeln",kat:"Getreide",f:"g",r:"g",e:"🍘",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Tapiokastärke",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Low-FODMAP Bindemittel/Mehlalternative."},
+  {name:"Kartoffelstärke",kat:"Getreide",f:"g",r:"g",e:"🥔",info:"Low-FODMAP Bindemittel."},
+  {name:"Mandelmehl",kat:"Getreide",f:"g",r:"g",e:"🌰",info:"Low-FODMAP Mehlalternative. Nährstoffreich."},
+  {name:"Kokosmehl",kat:"Getreide",f:"g",r:"y",e:"🥥",info:"Low-FODMAP. Fettgehalt bei Reflux beachten."},
+
+  // ── PROTEIN ────────────────────────────────────────────────────
+  {name:"Hähnchenbrust",kat:"Protein",f:"g",r:"g",e:"🍗",info:"Doppelt grün. Mageres Geflügel – ideal für beide Erkrankungen."},
+  {name:"Hähnchenschenkel (ohne Haut)",kat:"Protein",f:"g",r:"g",e:"🍗",info:"Low-FODMAP, reflux-freundlich. Haut entfernen = weniger Fett."},
+  {name:"Pute / Truthahn",kat:"Protein",f:"g",r:"g",e:"🦃",info:"Doppelt grün, sehr mageres Protein."},
+  {name:"Lachs",kat:"Protein",f:"g",r:"g",e:"🐟",info:"Doppelt grün. Omega-3-Fettsäuren entzündungshemmend."},
+  {name:"Forelle",kat:"Protein",f:"g",r:"g",e:"🐟",info:"Doppelt grün, magerer Fisch."},
+  {name:"Kabeljau / Dorsch",kat:"Protein",f:"g",r:"g",e:"🐟",info:"Sehr magerer Fisch, doppelt grün."},
+  {name:"Tilapia",kat:"Protein",f:"g",r:"g",e:"🐟",info:"Doppelt grün, neutraler Geschmack."},
+  {name:"Thunfisch (frisch)",kat:"Protein",f:"g",r:"y",e:"🐟",info:"Low-FODMAP. Bei Reflux in Maßen – leicht fettreich."},
+  {name:"Thunfisch (Dose in Wasser)",kat:"Protein",f:"g",r:"g",e:"🐟",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Sardinen (in Wasser/Öl)",kat:"Protein",f:"g",r:"y",e:"🐟",info:"Low-FODMAP. Fettgehalt bei Reflux beachten."},
+  {name:"Makrele",kat:"Protein",f:"g",r:"y",e:"🐟",info:"Low-FODMAP. Fetthaltiger Fisch – bei Reflux Menge beachten."},
+  {name:"Garnelen",kat:"Protein",f:"g",r:"g",e:"🦐",info:"Doppelt grün. Mageres Meeresfrüchte-Protein."},
+  {name:"Muscheln",kat:"Protein",f:"g",r:"g",e:"🦪",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Hummer / Krebs",kat:"Protein",f:"g",r:"g",e:"🦞",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Eier (ganz)",kat:"Protein",f:"g",r:"y",e:"🥚",info:"Low-FODMAP. Eigelb fettreich – bei Reflux lieber Eiweiß bevorzugen."},
+  {name:"Eiweiß (ohne Eigelb)",kat:"Protein",f:"g",r:"g",e:"🥚",info:"Doppelt grün. Ideal für Reflux-Patienten."},
+  {name:"Tofu (fest)",kat:"Protein",f:"g",r:"g",e:"🫘",info:"Doppelt grün. Pflanzliches Protein, sehr gut verträglich."},
+  {name:"Tofu (seidig/weich)",kat:"Protein",f:"g",r:"g",e:"🫘",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Tempeh",kat:"Protein",f:"g",r:"g",e:"🫘",info:"Low-FODMAP. Fermentiert – gut für Darmflora, kein Reflux-Trigger."},
+  {name:"Rindfleisch (mager)",kat:"Protein",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Magere Cuts (z.B. Filet) bei Reflux bevorzugen."},
+  {name:"Rindfleisch (fett/Hackfleisch)",kat:"Protein",f:"g",r:"r",e:"🥩",info:"Low-FODMAP, aber fettreich → Reflux-Trigger."},
+  {name:"Lammfleisch (mager)",kat:"Protein",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Mager zubereitet reflux-OK."},
+  {name:"Schweinefleisch (mager)",kat:"Protein",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Magere Cuts bevorzugen."},
+  {name:"Kichererbsen (Dose, abgespült, 42g)",kat:"Protein",f:"g",r:"g",e:"🫘",info:"Kleine Menge Low-FODMAP wenn abgespült. Größere Mengen High-FODMAP."},
+  {name:"Kichererbsen (Dose, >100g)",kat:"Protein",f:"r",r:"g",e:"🫘",info:"Größere Mengen High-FODMAP (GOS)."},
+  {name:"Linsen (rote, gekocht)",kat:"Protein",f:"r",r:"g",e:"🫘",info:"High-FODMAP. Dosiert testen in Langzeiternährung."},
+  {name:"Linsen (grüne, <60g)",kat:"Protein",f:"y",r:"g",e:"🫘",info:"Kleine Mengen besser verträglich. Im FODMAP-Test testen."},
+  {name:"Bohnen (alle Arten, >40g)",kat:"Protein",f:"r",r:"g",e:"🫘",info:"High-FODMAP (GOS). Stark gasbildend."},
+  {name:"Bohnen (Dose, abgespült, <42g)",kat:"Protein",f:"g",r:"g",e:"🫘",info:"Sehr kleine Menge tolerierbar. Abspülen reduziert FODMAPs!"},
+  {name:"Erdnüsse (32g)",kat:"Protein",f:"g",r:"y",e:"🥜",info:"Low-FODMAP. Fettreich – bei Reflux moderate Mengen."},
+  {name:"Schinken (mager, natur)",kat:"Protein",f:"g",r:"y",e:"🥩",info:"Low-FODMAP wenn ohne Zwiebeln/Knoblauch. Bei Reflux mager wählen."},
+  {name:"Verarbeitetes Fleisch (Wurst)",kat:"Protein",f:"r",r:"r",e:"🌭",info:"Oft High-FODMAP (Knoblauch/Zwiebeln). Fettreich → Reflux."},
+
+  // ── MILCH & MILCHPRODUKTE ─────────────────────────────────────
+  {name:"Laktosefreie Milch",kat:"Milch",f:"g",r:"y",e:"🥛",info:"Low-FODMAP. Milchfett kann bei Reflux leicht reizen."},
+  {name:"Laktosefreier Joghurt",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Doppelt grün. Probiotika gut für Darmflora."},
+  {name:"Laktosefreier Quark",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Low-FODMAP, proteinreich, reflux-freundlich."},
+  {name:"Hartkäse (Cheddar, Parmesan, Gouda alt)",kat:"Milch",f:"g",r:"y",e:"🧀",info:"Naturell laktosearm. Bei Reflux in Maßen – Fettgehalt beachten."},
+  {name:"Feta",kat:"Milch",f:"g",r:"y",e:"🧀",info:"Low-FODMAP. Salz- und Fettgehalt bei Reflux beachten."},
+  {name:"Camembert / Brie",kat:"Milch",f:"g",r:"r",e:"🧀",info:"Low-FODMAP, aber fettreicher Weichkäse → Reflux-Trigger."},
+  {name:"Mozzarella (kleine Port.)",kat:"Milch",f:"y",r:"y",e:"🧀"},
+  {name:"Frischkäse (Vollfett)",kat:"Milch",f:"y",r:"r",e:"🧀",info:"Moderate FODMAPs. Fettreich → Reflux-Trigger."},
+  {name:"Butter (laktosefrei)",kat:"Milch",f:"g",r:"y",e:"🧈",info:"Low-FODMAP. Gesättigte Fette – bei Reflux in Maßen."},
+  {name:"Schlagsahne",kat:"Milch",f:"g",r:"r",e:"🥛",info:"Low-FODMAP, aber sehr fettreich → starker Reflux-Trigger."},
+  {name:"Kuhmilch (normal)",kat:"Milch",f:"r",r:"y",e:"🥛",info:"High-FODMAP (Laktose). Reflux OK in kleinen Mengen."},
+  {name:"Mandelmilch (ungesüßt)",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Doppelt grün! Beste Milchalternative für beide Erkrankungen."},
+  {name:"Reismilch",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Doppelt grün. Sehr leicht und bekömmlich."},
+  {name:"Hafermilch",kat:"Milch",f:"y",r:"g",e:"🥛",info:"Moderate FODMAPs. Reflux-freundlich. Glutenfreie Variante bevorzugen."},
+  {name:"Kokosmilch (Dose, 60ml)",kat:"Milch",f:"g",r:"y",e:"🥥",info:"Kleine Menge Low-FODMAP. Fettreich – bei Reflux beachten."},
+  {name:"Kokosmilch (Dose, >100ml)",kat:"Milch",f:"r",r:"r",e:"🥥",info:"Größere Mengen High-FODMAP. Sehr fettreich."},
+  {name:"Sojamilch (Sojabohnen-Basis)",kat:"Milch",f:"r",r:"y",e:"🥛",info:"High-FODMAP (GOS). Sojamilch aus Sojaprotein testen."},
+  {name:"Sojamilch (Sojaprotein-Basis)",kat:"Milch",f:"g",r:"y",e:"🥛",info:"Low-FODMAP wenn aus Sojaprotein (nicht Sojabohnen). Etikett prüfen!"},
+  {name:"Hanfmilch",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Macadamiamilch",kat:"Milch",f:"g",r:"g",e:"🥛",info:"Low-FODMAP, reflux-freundlich."},
+
+  // ── FETTE & ÖLE ───────────────────────────────────────────────
+  {name:"Olivenöl",kat:"Fette & Öle",f:"g",r:"y",e:"🫒",info:"Low-FODMAP. Fett verlangsamt Magenentleerung – bei Reflux Menge beachten."},
+  {name:"Kokosöl",kat:"Fette & Öle",f:"g",r:"y",e:"🥥",info:"Low-FODMAP. Gesättigte Fettsäuren – Reflux beachten."},
+  {name:"Rapsöl",kat:"Fette & Öle",f:"g",r:"y",e:"🌱",info:"Low-FODMAP. Gute Fettsäurenzusammensetzung."},
+  {name:"Sesamöl",kat:"Fette & Öle",f:"g",r:"y",e:"🌱",info:"Low-FODMAP. Fettreich – in Maßen."},
+  {name:"Sonnenblumenöl",kat:"Fette & Öle",f:"g",r:"y",e:"🌻",info:"Low-FODMAP. Fettreich – in Maßen."},
+  {name:"Avocadoöl",kat:"Fette & Öle",f:"g",r:"y",e:"🥑",info:"Low-FODMAP. Einfach ungesättigte Fette – gesund, aber Menge bei Reflux."},
+
+  // ── NÜSSE & SAMEN ─────────────────────────────────────────────
+  {name:"Mandeln (10 Stk. max.)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌰",info:"Low-FODMAP bis 10 Stk. Reflux-freundlich. Bei mehr High-FODMAP!"},
+  {name:"Walnüsse (10 Stk.)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌰",info:"Low-FODMAP. Omega-3. Fettreich – bei Reflux moderate Mengen."},
+  {name:"Haselnüsse (15 Stk.)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌰",info:"Low-FODMAP bis 15 Stk. Fettreich."},
+  {name:"Macadamia-Nüsse (20 Stk.)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌰",info:"Low-FODMAP. Sehr fettreich – bei Reflux in Maßen."},
+  {name:"Paranüsse (10 Stk.)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌰",info:"Low-FODMAP. Reich an Selen."},
+  {name:"Pekannüsse (10 Stk.)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌰",info:"Low-FODMAP. Fettreich."},
+  {name:"Erdnüsse (32g)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🥜",info:"Low-FODMAP. Technisch Hülsenfrüchte. Fettreich – Reflux beachten."},
+  {name:"Erdnussbutter (2 EL)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🥜",info:"Low-FODMAP. Fettreich und dicht → bei Reflux portionsweise."},
+  {name:"Cashews (10 Stk.)",kat:"Nüsse & Samen",f:"r",r:"y",e:"🌰",info:"High-FODMAP (Fruktane + GOS). Meiden bei Reizdarm."},
+  {name:"Pistazien",kat:"Nüsse & Samen",f:"r",r:"y",e:"🌿",info:"High-FODMAP (Fruktane + GOS). Meiden."},
+  {name:"Chiasamen (2 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌱",info:"Low-FODMAP. Omega-3, Ballaststoffe. Reflux-freundlich."},
+  {name:"Leinsamen (1 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌱",info:"Low-FODMAP. Schleimhautschutz, beruhigend für Magen."},
+  {name:"Hanfsamen (2 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌱",info:"Low-FODMAP, reflux-freundlich, proteinreich."},
+  {name:"Sonnenblumenkerne (2 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌻",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Kürbiskerne (2 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🎃",info:"Doppelt grün! Reich an Zink, entzündungshemmend."},
+  {name:"Sesamkörner (1 EL)",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌱",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Sesampaste (Tahini, 2 EL)",kat:"Nüsse & Samen",f:"g",r:"y",e:"🌱",info:"Low-FODMAP. Fettreich – bei Reflux in Maßen."},
+  {name:"Mohn",kat:"Nüsse & Samen",f:"g",r:"g",e:"🌸",info:"Low-FODMAP, reflux-freundlich."},
+
+  // ── GETRÄNKE ───────────────────────────────────────────────────
+  {name:"Wasser (still)",kat:"Getränke",f:"g",r:"g",e:"💧",info:"Doppelt grün. Bestes Getränk für Reizdarm & Reflux."},
+  {name:"Wasser (mit Kohlensäure)",kat:"Getränke",f:"g",r:"r",e:"💧",info:"Low-FODMAP, aber CO₂ bläht den Magen → Reflux-Trigger."},
+  {name:"Kamillentee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Doppelt grün! Beruhigt Darm UND Magenschleimhaut."},
+  {name:"Ingwertee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Doppelt grün! Entzündungshemmend, antinauseös."},
+  {name:"Fencheltee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Low-FODMAP. Beruhigt Blähungen, reflux-freundlich."},
+  {name:"Pfefferminztee",kat:"Getränke",f:"g",r:"r",e:"🫖",info:"Low-FODMAP. Entspannt unteren Ösophagussphinkter → Reflux-Trigger!"},
+  {name:"Grüner Tee (schwach)",kat:"Getränke",f:"g",r:"y",e:"🍵",info:"Low-FODMAP. Koffein kann bei Reflux reizen – schwach aufbrühen."},
+  {name:"Schwarzer Tee (schwach)",kat:"Getränke",f:"g",r:"y",e:"🍵",info:"Low-FODMAP. Koffein-Gehalt beachten."},
+  {name:"Rooibostee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Doppelt grün! Koffeinfrei, antioxidativ."},
+  {name:"Lavendeltee",kat:"Getränke",f:"g",r:"g",e:"🌸",info:"Low-FODMAP, beruhigend, reflux-freundlich."},
+  {name:"Baldrian-/Melissentee",kat:"Getränke",f:"g",r:"g",e:"🌿",info:"Beruhigend für Darm und Nerven."},
+  {name:"Kaffee (normal)",kat:"Getränke",f:"g",r:"r",e:"☕",info:"Low-FODMAP, aber Säure + Koffein → starker Reflux-Trigger. Meiden!"},
+  {name:"Kaffee (Espresso)",kat:"Getränke",f:"g",r:"r",e:"☕",info:"Low-FODMAP, sehr konzentriert → stärkster Reflux-Trigger."},
+  {name:"Koffeinfreier Kaffee",kat:"Getränke",f:"g",r:"y",e:"☕",info:"Low-FODMAP. Säure bleibt – bei Reflux nach Verträglichkeit testen."},
+  {name:"Karottensaft (150ml)",kat:"Getränke",f:"r",r:"g",e:"🥕",info:"Konzentriert → High-FODMAP. Reflux-freundlich."},
+  {name:"Cranberrysaft (ungesüßt)",kat:"Getränke",f:"g",r:"y",e:"🍒",info:"Low-FODMAP. Säuregehalt bei Reflux beachten."},
+  {name:"Orangensaft",kat:"Getränke",f:"g",r:"r",e:"🍊",info:"Low-FODMAP, aber stark säurehaltig → Reflux-Trigger."},
+  {name:"Apfelsaft",kat:"Getränke",f:"r",r:"y",e:"🍎",info:"High-FODMAP (Fruktose). Auch bei Reflux eher meiden."},
+  {name:"Kokoswasser (ungesüßt)",kat:"Getränke",f:"g",r:"g",e:"🥥",info:"Low-FODMAP, reflux-freundlich, Elektrolyte."},
+  {name:"Wein (trocken, <150ml)",kat:"Getränke",f:"g",r:"r",e:"🍷",info:"Low-FODMAP in kleiner Menge. Alkohol → starker Reflux-Trigger."},
+  {name:"Bier",kat:"Getränke",f:"r",r:"r",e:"🍺",info:"High-FODMAP (Fruktane aus Gerste) + Alkohol → doppelter Trigger."},
+  {name:"Alkohol allgemein",kat:"Getränke",f:"r",r:"r",e:"🍷",info:"Meiden! Alkohol entspannt Ösophagussphinkter → Reflux. Außerdem High-FODMAP."},
+  {name:"Cola / Limo",kat:"Getränke",f:"r",r:"r",e:"🥤",info:"High-FODMAP (Fruktose) + CO₂ + Koffein → dreifacher Trigger."},
+  {name:"Aloe Vera Saft (ohne Zitronensäure)",kat:"Getränke",f:"g",r:"g",e:"🌵",info:"Low-FODMAP. Beruhigend für Magen- & Darmschleimhaut."},
+
+  // ── GEWÜRZE & KRÄUTER ─────────────────────────────────────────
+  {name:"Salz",kat:"Gewürze",f:"g",r:"g",e:"🧂",info:"FODMAP-frei. Bei Reflux normale Mengen OK."},
+  {name:"Schwarzer Pfeffer",kat:"Gewürze",f:"g",r:"y",e:"🌶️",info:"Low-FODMAP. Reizend auf Speiseröhrenschleimhaut – bei Reflux sparsam."},
+  {name:"Kurkuma",kat:"Gewürze",f:"g",r:"g",e:"🟡",info:"Doppelt grün! Stark entzündungshemmend – positiv für Darm & Magen."},
+  {name:"Ingwer (getrocknet)",kat:"Gewürze",f:"g",r:"g",e:"🫚",info:"Low-FODMAP, entzündungshemmend, gut für Magen."},
+  {name:"Zimt",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, blutzuckerregulierend, reflux-freundlich."},
+  {name:"Paprikapulver (mild/süß)",kat:"Gewürze",f:"g",r:"g",e:"🌶️",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Paprikapulver (scharf/Cayenne)",kat:"Gewürze",f:"g",r:"r",e:"🌶️",info:"Low-FODMAP. Capsaicin → Reflux-Trigger."},
+  {name:"Kreuzkümmel",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Verdauungsfördernd – gut für Darm."},
+  {name:"Koriander (Samen/Pulver)",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Fenchelsamen",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Carminativ – reduziert Blähungen."},
+  {name:"Kümmel",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Blähungslindernd, gut für Darm."},
+  {name:"Anis",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Beruhigend für den Darm."},
+  {name:"Kardamom",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Entzündungshemmend."},
+  {name:"Vanille (Schote/Extrakt)",kat:"Gewürze",f:"g",r:"g",e:"🌸",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Senf (einfach)",kat:"Gewürze",f:"g",r:"y",e:"🌿",info:"Low-FODMAP. Leicht scharf – bei Reflux in Maßen."},
+  {name:"Sojasauce (glutenfrei, 2 EL)",kat:"Gewürze",f:"g",r:"y",e:"🫙",info:"Low-FODMAP in kleiner Menge. Salz und Säure beachten."},
+  {name:"Worcestershire-Sauce (kleine Menge)",kat:"Gewürze",f:"g",r:"y",e:"🫙",info:"Enthält etwas Knoblauch – bei Reizdarm testen."},
+  {name:"Sambal / Chilisoße",kat:"Gewürze",f:"y",r:"r",e:"🌶️",info:"Oft mit Knoblauch/Zwiebeln. Scharf → Reflux-Trigger."},
+  {name:"Ketchup",kat:"Gewürze",f:"r",r:"r",e:"🍅",info:"High-FODMAP (Fruktose+Tomaten). Starker Reflux-Trigger."},
+  {name:"Frischer Basilikum",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frische Petersilie",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frischer Dill",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frischer Rosmarin",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frischer Thymian",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frischer Salbei",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Frischer Oregano",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Lorbeerblatt",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Muskatnuss (kleine Menge)",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP in normalen Kochmengen."},
+  {name:"Nelken",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP in normalen Mengen."},
+  {name:"Chili (getrocknet, kleine Menge)",kat:"Gewürze",f:"g",r:"r",e:"🌶️",info:"Low-FODMAP. Capsaicin → Reflux-Trigger."},
+  {name:"Currypulver (ohne Knoblauch)",kat:"Gewürze",f:"g",r:"y",e:"🌿",info:"Low-FODMAP wenn ohne Knoblauch/Zwiebeln. Schärfe bei Reflux beachten."},
+
+  // ── SÜSSES & SÜSSUNGSMITTEL ───────────────────────────────────
+  {name:"Ahornsirup (2 EL)",kat:"Süßes",f:"g",r:"y",e:"🍁",info:"Low-FODMAP. Natürlicher Zucker – bei Reflux moderat verwenden."},
+  {name:"Zucker (Haushalt, wenig)",kat:"Süßes",f:"y",r:"y",e:"🍬",info:"Saccharose ist grenzwertig. In kleinen Mengen tolerierbar."},
+  {name:"Traubenzucker (Glukose)",kat:"Süßes",f:"g",r:"y",e:"🍬",info:"Low-FODMAP. Direkt ins Blut aufgenommen."},
+  {name:"Honig",kat:"Süßes",f:"r",r:"y",e:"🍯",info:"High-FODMAP (Fruktose > Glukose). Meiden. Ahornsirup bevorzugen."},
+  {name:"Agavendicksaft",kat:"Süßes",f:"r",r:"r",e:"🌵",info:"Sehr High-FODMAP (sehr hoher Fruktosegehalt). Meiden!"},
+  {name:"Maissirup / HFCS",kat:"Süßes",f:"r",r:"r",e:"🌽",info:"Sehr High-FODMAP + Reflux-Trigger. Meiden."},
+  {name:"Stevia",kat:"Süßes",f:"g",r:"g",e:"🌿",info:"Doppelt grün! Natürlicher Süßstoff ohne FODMAPs."},
+  {name:"Erythrit",kat:"Süßes",f:"g",r:"g",e:"🌸",info:"Polyol, aber sehr gut verträglich (kaum fermentiert). Reflux-OK."},
+  {name:"Sorbit (E420)",kat:"Süßes",f:"r",r:"r",e:"❌",info:"High-FODMAP Polyol. In Zuckerfreiprodukten! Meiden."},
+  {name:"Xylit (E967)",kat:"Süßes",f:"r",r:"r",e:"❌",info:"High-FODMAP Polyol. In Kaugummi/Süßigkeiten. Meiden."},
+  {name:"Isomalt (E953)",kat:"Süßes",f:"r",r:"r",e:"❌",info:"High-FODMAP Polyol. In Diabetikerprodukten. Meiden."},
+  {name:"Mannitol (E421)",kat:"Süßes",f:"r",r:"r",e:"❌",info:"High-FODMAP Polyol. Meiden."},
+  {name:"Schokolade (dunkel, >70%)",kat:"Süßes",f:"g",r:"r",e:"🍫",info:"Low-FODMAP. Koffein + Fett + Methylxanthine → Reflux-Trigger."},
+  {name:"Schokolade (Milch)",kat:"Süßes",f:"r",r:"r",e:"🍫",info:"High-FODMAP + Laktose + Koffein → doppelter Trigger."},
+  {name:"Kakaopulver (1 EL)",kat:"Süßes",f:"g",r:"r",e:"🍫",info:"Low-FODMAP in kleiner Menge. Koffein → Reflux."},
+  {name:"Reissirup",kat:"Süßes",f:"g",r:"y",e:"🍚",info:"Low-FODMAP Zuckeralternative."},
+  {name:"Zuckerrübensirup (1 EL)",kat:"Süßes",f:"g",r:"y",e:"🌱",info:"Low-FODMAP in kleiner Menge."},
+
+  // ── FERTIGPRODUKTE & SONSTIGES ────────────────────────────────
+  {name:"Miso-Paste",kat:"Sonstiges",f:"g",r:"g",e:"🫙",info:"Low-FODMAP in normalen Mengen. Fermentiert – gut für Darmflora."},
+  {name:"Tamari-Soße (glutenfrei)",kat:"Sonstiges",f:"g",r:"y",e:"🫙",info:"Low-FODMAP. Salz- und Säuregehalt bei Reflux beachten."},
+  {name:"Kokosaminos",kat:"Sonstiges",f:"g",r:"y",e:"🥥",info:"Low-FODMAP Sojasoßen-Alternative."},
+  {name:"Reiswein / Sake (klein)",kat:"Sonstiges",f:"g",r:"y",e:"🍶",info:"Low-FODMAP. Alkohol bei Reflux in Maßen."},
+  {name:"Apfelessig (1 EL)",kat:"Sonstiges",f:"g",r:"r",e:"🫙",info:"Low-FODMAP. Stark säurehaltig → Reflux-Trigger."},
+  {name:"Balsamico-Essig",kat:"Sonstiges",f:"g",r:"r",e:"🫙",info:"Low-FODMAP. Säurehaltig → Reflux-Trigger."},
+  {name:"Reisessig (wenig)",kat:"Sonstiges",f:"g",r:"y",e:"🍚",info:"Low-FODMAP. Milder als andere Essigsorten."},
+  {name:"Natriumbikarbonat / Natron",kat:"Sonstiges",f:"g",r:"g",e:"🧂",info:"Basisch – kann Sodbrennen sogar lindern!"},
+  {name:"Hühnerbrühe (ohne Zwiebel/Knoblauch)",kat:"Sonstiges",f:"g",r:"g",e:"🍲",info:"Low-FODMAP wenn selbst hergestellt. Beruhigend für Darm & Magen."},
+  {name:"Gemüsebrühe (ohne Zwiebel/Knoblauch)",kat:"Sonstiges",f:"g",r:"g",e:"🍲",info:"Low-FODMAP wenn ohne problematische Zutaten. Etiketten prüfen!"},
+  {name:"Fertigbrühe (Würfel/Pulver)",kat:"Sonstiges",f:"r",r:"r",e:"🍲",info:"Meist High-FODMAP (Zwiebeln/Knoblauch) + salzig → Reflux."},
+  {name:"Mayonnaise (natur)",kat:"Sonstiges",f:"g",r:"r",e:"🫙",info:"Low-FODMAP. Fettreich + Essig → Reflux-Trigger."},
+  {name:"Hummus (selbst, ohne Knoblauch)",kat:"Sonstiges",f:"y",r:"g",e:"🫘",info:"Kichererbsen: moderate FODMAPs. Knoblauch weglassen!"},
+  {name:"Pesto (ohne Knoblauch)",kat:"Sonstiges",f:"g",r:"y",e:"🌿",info:"Low-FODMAP wenn ohne Knoblauch. Öl bei Reflux beachten."},
+  {name:"Joghurt-Dressing (laktosefrei)",kat:"Sonstiges",f:"g",r:"g",e:"🥛",info:"Low-FODMAP, reflux-freundlich."},
+  {name:"Speisestärke",kat:"Sonstiges",f:"g",r:"g",e:"🌾",info:"Low-FODMAP Bindemittel."},
+  {name:"Gelatine",kat:"Sonstiges",f:"g",r:"g",e:"🍮",info:"Low-FODMAP, proteinhaltig."},
+  {name:"Backpulver",kat:"Sonstiges",f:"g",r:"g",e:"🌾",info:"Low-FODMAP in normalen Backmengen."},
+];
+
+const REZEPTE = [
+  {id:1,name:"Lachsfilet mit Zucchini & Reis",e:"🐟",kat:"Abendessen",min:25,level:"Einfach",
+   zutaten:["2 Lachsfilets (à 150g)","1 Zucchini","150g Langkornreis","2 EL Olivenöl","Salz, Pfeffer","Etwas Zitronenschale","Frischer Dill"],
+   zub:"Reis nach Packungsanweisung kochen. Zucchini in Scheiben schneiden, in 1 EL Olivenöl 4 Min. bei mittlerer Hitze braten, salzen. Lachs mit Salz und Pfeffer würzen, in 1 EL Öl je 4 Min. pro Seite goldbraun braten. Mit Zitronenschale und frischem Dill servieren.",
+   tags:["Low-FODMAP","Reflux-OK","Glutenfrei","Laktosefrei"],zyklus:["follikel","ovulation"],
+   kal:420,prot:38,kh:42,fett:14},
+  {id:2,name:"Zucchini-Frittata",e:"🥚",kat:"Frühstück",min:20,level:"Einfach",
+   zutaten:["4 Eier","1 Zucchini","50g Feta","2 EL Olivenöl","Salz, Pfeffer","Frisches Basilikum"],
+   zub:"Ofen auf 180°C vorheizen. Zucchini fein raspeln und gut ausdrücken. Mit Eiern, Feta, Salz und Pfeffer verrühren. In ofenfeste, bebutterte Pfanne gießen, mit Basilikum bestreuen. Ca. 15 Min. backen bis gestockt.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["menstruation","follikel"],
+   kal:290,prot:19,kh:5,fett:22},
+  {id:3,name:"Hühnerbrühe mit Reisnudeln",e:"🍜",kat:"Mittagessen",min:35,level:"Mittel",
+   zutaten:["200g Hähnchenfilet","100g Reisnudeln","2 Möhren","Frischer Ingwer (2cm)","1L Wasser","Salz","Frische Petersilie"],
+   zub:"Hähnchen mit Wasser, Möhren, Ingwer und Salz aufsetzen. 25 Min. leise köcheln lassen. Hähnchen rausnehmen, in Stücke zupfen. Reisnudeln 3 Min. in der Brühe gar ziehen lassen. Mit Hähnchenfleisch und Petersilie servieren.",
+   tags:["Low-FODMAP","Reflux-OK","Glutenfrei","Laktosefrei"],zyklus:["menstruation","luteal"],
+   kal:350,prot:32,kh:40,fett:6},
+  {id:4,name:"Quinoa-Bowl mit Ofengemüse",e:"🥗",kat:"Mittagessen",min:30,level:"Einfach",
+   zutaten:["150g Quinoa","1 rote Paprika","1 Aubergine","1 Zucchini","3 EL Olivenöl","Salz, Paprikapulver","1 Handvoll Spinat","2 EL Tahini"],
+   zub:"Gemüse würfeln, mit Öl und Gewürzen vermengen, 20 Min. bei 200°C rösten. Quinoa nach Packung kochen. Spinat als Basis, Quinoa und Gemüse darüber anrichten, mit dünn verdünntem Tahini beträufeln.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei"],zyklus:["follikel","ovulation"],
+   kal:480,prot:16,kh:58,fett:20},
+  {id:5,name:"Haferbrei mit Blaubeeren",e:"🥣",kat:"Frühstück",min:10,level:"Einfach",
+   zutaten:["80g Haferflocken (glutenfrei)","250ml Mandelmilch","50g Blaubeeren","1 EL Ahornsirup","½ TL Zimt","1 EL Chiasamen"],
+   zub:"Haferflocken mit Mandelmilch in einem Topf aufkochen, bei niedriger Hitze 3 Min. rühren bis cremig. Mit Blaubeeren, Ahornsirup und Zimt anrichten.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Schnell"],zyklus:["alle"],
+   kal:320,prot:9,kh:52,fett:9},
+  {id:6,name:"Putenbrust mit Kartoffelpüree",e:"🍖",kat:"Abendessen",min:40,level:"Mittel",
+   zutaten:["200g Putenbrust","300g Kartoffeln","100ml laktosefreie Milch","2 EL Butter (laktosefrei)","Salz, Pfeffer","Frischer Rosmarin","Gedünstete Möhren"],
+   zub:"Kartoffeln schälen, kochen, stampfen. Laktosefreie Milch und Butter einarbeiten. Pute würzen, bei 180°C 15 Min. im Ofen garen. Möhren separat dünsten. Zusammen anrichten.",
+   tags:["Low-FODMAP","Reflux-OK","Glutenfrei"],zyklus:["luteal","menstruation"],
+   kal:510,prot:42,kh:48,fett:16},
+  {id:7,name:"Ingwer-Möhren-Suppe",e:"🍲",kat:"Abendessen",min:25,level:"Einfach",
+   zutaten:["4 Möhren","1 Stück Ingwer (3cm)","500ml Gemüsebrühe","100ml Kokosmilch (Dose)","1 EL Olivenöl","Salz, Kurkuma, Pfeffer"],
+   zub:"Möhren und Ingwer schälen, würfeln. In Öl 3 Min. anschwitzen. Brühe zugeben, 15 Min. weich kochen. Pürieren, Kokosmilch und Kurkuma einrühren, abschmecken. Heiß servieren.",
+   tags:["Low-FODMAP","Reflux-OK","Vegan","Glutenfrei"],zyklus:["menstruation","luteal"],
+   kal:190,prot:4,kh:26,fett:8},
+  {id:8,name:"Erdbeer-Bananen-Smoothie",e:"🥤",kat:"Snack",min:5,level:"Einfach",
+   zutaten:["1 unreife Banane","100g Erdbeeren","200ml Reismilch","1 TL Leinsamen geschrotet","1 TL Ahornsirup"],
+   zub:"Alle Zutaten in den Mixer geben und cremig mixen. Sofort trinken.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Schnell"],zyklus:["alle"],
+   kal:210,prot:3,kh:44,fett:3},
+  {id:9,name:"Gebackene Süßkartoffel",e:"🍠",kat:"Mittagessen",min:50,level:"Einfach",
+   zutaten:["1 große Süßkartoffel","100g Quark (laktosefrei)","Schnittlauch, Petersilie","1 EL Olivenöl","Salz, Pfeffer","50g frischer Spinat"],
+   zub:"Süßkartoffel waschen, einölen, bei 200°C ca. 45 Min. backen bis weich. Quark mit Kräutern, Salz und Pfeffer verrühren. Kartoffel aufschneiden, Kräuterquark hineingeben, mit Spinat servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["follikel","ovulation"],
+   kal:340,prot:12,kh:52,fett:9},
+  {id:10,name:"Garnelen-Reispfanne",e:"🍤",kat:"Abendessen",min:20,level:"Einfach",
+   zutaten:["200g Garnelen (TK, aufgetaut)","150g Reis (vorgekocht)","1 rote Paprika","2 Möhren","2 EL glutenfreie Sojasoße","1 Ei","2 EL Sesamöl","Frischer Ingwer"],
+   zub:"Gemüse in Würfel schneiden. In Sesamöl scharf anbraten (3 Min.). Garnelen zugeben, 3 Min. mitbraten. Reis und Sojasoße dazu. Ei aufschlagen und einrühren bis gestockt.",
+   tags:["Low-FODMAP","Glutenfrei","Schnell"],zyklus:["alle"],
+   kal:440,prot:34,kh:48,fett:12},
+  {id:11,name:"Bananenpfannkuchen",e:"🥞",kat:"Frühstück",min:15,level:"Einfach",
+   zutaten:["2 reife Bananen","2 Eier","50g Haferflocken (glutenfrei)","1 Prise Salz","1 TL Kokosöl","Blaubeeren zum Servieren"],
+   zub:"Bananen mit einer Gabel zerdrücken. Mit Eiern, Haferflocken und Salz zu einem Teig verrühren. Portionsweise in Kokosöl bei mittlerer Hitze je 2 Min. pro Seite backen. Mit Blaubeeren servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Schnell"],zyklus:["alle"],
+   kal:310,prot:12,kh:48,fett:8},
+  {id:12,name:"Kürbiscremesuppe",e:"🎃",kat:"Abendessen",min:30,level:"Einfach",
+   zutaten:["400g Butternut-Kürbis","500ml Gemüsebrühe","100ml Kokosmilch","½ TL Ingwer","½ TL Kurkuma","Salz, Pfeffer","Kürbiskerne"],
+   zub:"Kürbis würfeln, in Brühe 20 Min. weich kochen. Pürieren, Kokosmilch und Gewürze zugeben, nochmals erhitzen. Mit gerösteten Kürbiskernen servieren.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Reflux-OK"],zyklus:["luteal","menstruation"],
+   kal:220,prot:5,kh:28,fett:10},
+  {id:13,name:"Hähnchen-Sesam-Salat",e:"🥗",kat:"Mittagessen",min:20,level:"Einfach",
+   zutaten:["150g Hähnchenbrust (gegrillt)","Kopfsalat","1 Gurke","Möhrenstreifen","2 EL Sesamöl","1 EL glutenfreie Sojasoße","1 TL geriebener Ingwer","Sesam"],
+   zub:"Hähnchen in Streifen schneiden. Salat und Gemüse zerkleinern. Dressing aus Sesamöl, Sojasoße und Ingwer verrühren. Alles mischen, mit Sesam bestreuen.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell"],zyklus:["follikel","ovulation"],
+   kal:310,prot:28,kh:12,fett:16},
+  {id:14,name:"Reisbrei mit Zimtbanane",e:"🍚",kat:"Frühstück",min:15,level:"Einfach",
+   zutaten:["100g Milchreis","300ml Mandelmilch","1 unreife Banane","½ TL Zimt","1 TL Ahornsirup","1 Prise Salz"],
+   zub:"Milchreis mit Mandelmilch und Salz in einem Topf aufkochen, bei niedriger Hitze 12 Min. köcheln, dabei regelmäßig rühren. In Schüssel geben, mit Banane, Zimt und Ahornsirup toppen.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Glutenfrei"],zyklus:["menstruation","luteal"],
+   kal:360,prot:7,kh:72,fett:5},
+  {id:15,name:"Spinat-Tofu-Pfanne",e:"🥬",kat:"Abendessen",min:20,level:"Einfach",
+   zutaten:["200g fester Tofu","150g Spinat","1 Möhre","2 EL glutenfreie Sojasoße","1 EL Sesamöl","1 TL Ingwer","Sesam","150g Reis als Beilage"],
+   zub:"Tofu in Würfel schneiden, in Sesamöl goldbraun braten (5 Min.). Möhre in Streifen zugeben, 2 Min. mitbraten. Spinat zugeben, zusammenfallen lassen. Mit Sojasoße ablöschen, mit Sesam bestreuen.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Schnell"],zyklus:["menstruation","follikel"],
+   kal:310,prot:18,kh:28,fett:14},
+  {id:16,name:"Kürbis-Risotto",e:"🎃",kat:"Abendessen",min:40,level:"Mittel",
+   zutaten:["200g Risottoreis","300g Butternut-Kürbis","800ml Gemüsebrühe","50g Parmesan","2 EL Butter (laktosefrei)","1 EL Olivenöl","Frischer Salbei","Salz, Pfeffer"],
+   zub:"Kürbis würfeln, in Olivenöl 5 Min. anbraten. Reis zugeben, kurz rösten. Brühe schöpfkellenweise zugeben und einrühren (ca. 20 Min.). Parmesan und Butter unterziehen, abschmecken.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["luteal","menstruation"],
+   kal:520,prot:14,kh:80,fett:16},
+  {id:17,name:"Gebackener Lachs mit Kräuterkruste",e:"🐟",kat:"Abendessen",min:25,level:"Einfach",
+   zutaten:["2 Lachsfilets","2 EL Dijon-Senf","3 EL Panko (glutenfrei)","Dill, Petersilie frisch","1 EL Olivenöl","Salz, Pfeffer","Ofengemüse als Beilage"],
+   zub:"Lachs mit Senf bestreichen. Kräuter fein hacken, mit Panko und Olivenöl mischen, auf dem Lachs andrücken. Bei 200°C 15 Min. backen.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Reflux-OK"],zyklus:["alle"],
+   kal:450,prot:42,kh:12,fett:24},
+  {id:18,name:"Polenta mit Gemüse",e:"🌽",kat:"Abendessen",min:25,level:"Mittel",
+   zutaten:["150g Polenta","600ml Wasser","50g Parmesan","2 EL Butter (laktosefrei)","1 Zucchini","1 Paprika","2 EL Olivenöl","Frisches Basilikum","Salz"],
+   zub:"Polenta in kochendes Salzwasser einrühren, 5 Min. köcheln, Parmesan und Butter unterrühren. Gemüse in Olivenöl braten, mit Basilikum würzen. Auf der Polenta servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["alle"],
+   kal:390,prot:12,kh:55,fett:14},
+  {id:19,name:"Hähnchen-Ingwer-Pfanne",e:"🍗",kat:"Mittagessen",min:25,level:"Einfach",
+   zutaten:["200g Hähnchenbrust","1 Zucchini","2 Möhren","2 EL glutenfreie Sojasoße","1 EL Sesamöl","2cm Ingwer frisch","150g Reis"],
+   zub:"Hähnchen in Streifen schneiden. Ingwer reiben. In Sesamöl Hähnchen anbraten, Gemüse zugeben, alles scharf braten. Mit Sojasoße und Ingwer abschmecken. Mit Reis servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell"],zyklus:["alle"],
+   kal:410,prot:38,kh:44,fett:10},
+  {id:20,name:"Frühstücks-Chia-Pudding",e:"🫐",kat:"Frühstück",min:5,level:"Einfach",
+   zutaten:["4 EL Chiasamen","250ml Mandelmilch","1 EL Ahornsirup","½ TL Vanille","50g Blaubeeren","Abend vorher vorbereiten!"],
+   zub:"Chiasamen mit Mandelmilch, Ahornsirup und Vanille verrühren. Mindestens 4 Stunden (besser über Nacht) im Kühlschrank quellen lassen. Mit Blaubeeren servieren.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Meal-Prep"],zyklus:["alle"],
+   kal:270,prot:8,kh:28,fett:14},  // ── NEU: 40 weitere Rezepte ─────────────────────────────────────
+  {id:21,name:"Ingwer-Kurkuma-Porridge",e:"🍚",kat:"Frühstück",min:12,level:"Einfach",
+   situation:["akut_schmerz","reflux_stark","menstruation"],
+   zutaten:["80g Reisflocken (oder glutenfreie Haferflocken)","300ml Mandelmilch","½ TL Kurkuma","½ TL Ingwer (gemahlen)","1 TL Ahornsirup","1 Prise Zimt","etwas Salz"],
+   zub:"Reisflocken mit Mandelmilch aufkochen, Kurkuma, Ingwer und Zimt einrühren. 3 Min. bei niedriger Hitze quellen lassen. Mit Ahornsirup abschmecken.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Schonkost","Glutenfrei"],zyklus:["menstruation","luteal"],
+   kal:290,prot:5,kh:52,fett:6},
+  {id:22,name:"Weißer Reisbrei mit Banane",e:"🍌",kat:"Frühstück",min:15,level:"Einfach",
+   situation:["akut_schmerz","durchfall","reflux_stark","mahlzeit_schlecht"],
+   zutaten:["100g weißer Reis","400ml Wasser","1 unreife Banane","Prise Salz","1 TL Ahornsirup"],
+   zub:"Reis mit Wasser und Salz aufkochen, bei niedrigster Hitze 15 Min. zu cremigem Brei kochen. Mit zerdrückter Banane und Ahornsirup servieren. Leicht verdaulich und magenberuhigend.",
+   tags:["Low-FODMAP","Schonkost","Reflux-OK","Vegan","Glutenfrei","Durchfall"],zyklus:["menstruation","alle"],
+   kal:310,prot:6,kh:70,fett:1},
+  {id:23,name:"Zucchini-Möhren-Eiernudeln",e:"🍝",kat:"Mittagessen",min:20,level:"Einfach",
+   situation:["normal","follikel","leicht"],
+   zutaten:["150g Reisnudeln","1 Zucchini","1 Möhre","2 Eier","2 EL glutenfreie Sojasoße","1 EL Sesamöl","Ingwer frisch (1cm)","Schnittlauch"],
+   zub:"Nudeln nach Packung kochen. Gemüse in Julienne schneiden, in Sesamöl 3 Min. anbraten. Nudeln zugeben, Eier einrühren bis gestockt. Mit Sojasoße und Ingwer abschmecken.",
+   tags:["Low-FODMAP","Glutenfrei","Schnell","Laktosefrei"],zyklus:["follikel","ovulation"],
+   kal:430,prot:18,kh:62,fett:12},
+  {id:24,name:"Kartoffelsuppe mit Möhren",e:"🥔",kat:"Mittagessen",min:30,level:"Einfach",
+   situation:["akut_schmerz","reflux_stark","menstruation","verstopfung"],
+   zutaten:["400g Kartoffeln","2 Möhren","600ml Gemüsebrühe (ohne Zwiebeln)","100ml Mandelmilch","2 EL Olivenöl","Salz","Frischer Schnittlauch","Prise Muskat"],
+   zub:"Kartoffeln und Möhren würfeln, in Brühe 20 Min. weich kochen. Pürieren, Mandelmilch unterrühren, mit Muskat und Salz abschmecken. Mit Schnittlauch garnieren.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Schonkost","Glutenfrei"],zyklus:["menstruation","luteal"],
+   kal:240,prot:5,kh:38,fett:8},
+  {id:25,name:"Gedämpfter Fisch mit Ingwer-Möhren",e:"🐟",kat:"Abendessen",min:25,level:"Einfach",
+   situation:["reflux_stark","akut_schmerz","schonend"],
+   zutaten:["200g Kabeljau oder Tilapia","2 Möhren","1 Zucchini","2cm Ingwer","1 EL glutenfreie Sojasoße","Salz","Frischer Koriander","150g Basmatireis"],
+   zub:"Gemüse in Streifen schneiden. Fisch mit Ingwer und Sojasoße marinieren (10 Min.). Alles zusammen im Dampfgarer 12 Min. garen. Mit Reis servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Reflux-OK","Schonkost"],zyklus:["alle"],
+   kal:320,prot:34,kh:42,fett:4},
+  {id:26,name:"Blaubeeren-Kokos-Smoothie",e:"🫐",kat:"Frühstück",min:5,level:"Einfach",
+   situation:["normal","follikel","schnell"],
+   zutaten:["40g Blaubeeren","1 unreife Banane","200ml Mandelmilch","1 EL Chiasamen","1 TL Leinsamen","1 TL Ahornsirup","½ TL Zimt"],
+   zub:"Alle Zutaten in den Standmixer geben und cremig pürieren. Bei Bedarf etwas mehr Mandelmilch zugeben.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Reflux-OK","Schnell"],zyklus:["follikel","ovulation"],
+   kal:240,prot:5,kh:42,fett:7},
+  {id:27,name:"Hirse-Porridge mit Zimt",e:"🌾",kat:"Frühstück",min:15,level:"Einfach",
+   situation:["menstruation","luteal","normal"],
+   zutaten:["80g Hirse","250ml Reismilch","1 TL Zimt","1 TL Ahornsirup","1 EL Kürbiskerne","½ Banane (unreif)"],
+   zub:"Hirse mit Reismilch aufkochen, 10 Min. bei niedriger Hitze quellen lassen. Mit Zimt, Ahornsirup und Banane servieren. Mit Kürbiskernen toppen.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Reflux-OK"],zyklus:["menstruation","luteal"],
+   kal:320,prot:8,kh:58,fett:7},
+  {id:28,name:"Kartoffel-Möhren-Stampf",e:"🥔",kat:"Abendessen",min:30,level:"Einfach",
+   situation:["akut_schmerz","reflux_stark","menstruation","schonend"],
+   zutaten:["300g Kartoffeln","2 Möhren","50ml laktosefreie Milch","1 EL Butter (laktosefrei)","Salz","Muskat","Frische Petersilie"],
+   zub:"Kartoffeln und Möhren schälen, würfeln, in Salzwasser 20 Min. weich kochen. Abgießen, stampfen. Milch und Butter unterrühren. Mit Muskat und Petersilie würzen.",
+   tags:["Low-FODMAP","Vegetarisch","Schonkost","Reflux-OK","Glutenfrei"],zyklus:["menstruation","luteal"],
+   kal:220,prot:5,kh:38,fett:7},
+  {id:29,name:"Lachs-Avocado-Bowl (mit Achtung)",e:"🥗",kat:"Mittagessen",min:15,level:"Einfach",
+   situation:["normal","follikel","ovulation"],
+   zutaten:["150g Lachs (gegart)","100g Reis (gekocht)","⅛ Avocado (Low-FODMAP Menge!)","Gurke in Scheiben","Möhrenstreifen","2 EL glutenfreie Sojasoße","1 TL Sesamöl","Sesam"],
+   zub:"Reis als Basis. Lachs in Stücke zerteilen, Gemüse anrichten. Avocado in Scheiben auf die Bowl legen (nur ⅛ = Low-FODMAP!). Mit Sojasoße und Sesamöl beträufeln.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell"],zyklus:["follikel","ovulation"],
+   kal:390,prot:32,kh:40,fett:12},
+  {id:30,name:"Kürbis-Linsen-Suppe (leicht)",e:"🎃",kat:"Mittagessen",min:35,level:"Mittel",
+   situation:["luteal","normal"],
+   zutaten:["300g Hokkaido-Kürbis","100g rote Linsen","500ml Gemüsebrühe","1 TL Kurkuma","1 TL Ingwer","½ TL Zimt","2 EL Olivenöl","Salz","Koriander frisch"],
+   zub:"Kürbis würfeln. Mit Linsen, Brühe und Gewürzen aufkochen, 20 Min. köcheln. Zur Hälfte pürieren (für Textur). Mit Koriander servieren. Hinweis: Rote Linsen sind High-FODMAP – nur bei Langzeiternährung wenn verträglich.",
+   tags:["Vegetarisch","Vegan","Glutenfrei","Laktosefrei"],zyklus:["luteal"],
+   kal:280,prot:12,kh:42,fett:8},
+  {id:31,name:"Hähnchen-Zitronengras-Suppe",e:"🍜",kat:"Abendessen",min:30,level:"Mittel",
+   situation:["normal","follikel","reflux_mittel"],
+   zutaten:["200g Hähnchenbrust","1 Stängel Zitronengras","200ml Kokosmilch (60ml!)","400ml Hühnerbrühe","Ingwer frisch","Pak Choi","Reisnudeln 100g","Salz","Koriander"],
+   zub:"Brühe mit Zitronengras und Ingwer aufkochen. Hähnchen in Streifen 8 Min. garen. Kokosmilch, Pak Choi und Reisnudeln zugeben, 3 Min. ziehen lassen. Mit Koriander servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei"],zyklus:["follikel","ovulation"],
+   kal:380,prot:30,kh:38,fett:12},
+  {id:32,name:"Buchweizen-Pfannkuchen",e:"🥞",kat:"Frühstück",min:20,level:"Einfach",
+   situation:["normal","wochenende"],
+   zutaten:["100g Buchweizenmehl","1 Ei","200ml Mandelmilch","1 EL Ahornsirup","Prise Salz","½ TL Vanille","Kokosöl zum Braten","Frische Erdbeeren"],
+   zub:"Mehl, Ei, Mandelmilch, Ahornsirup und Vanille zu einem glatten Teig rühren. 5 Min. ruhen lassen. In Kokosöl bei mittlerer Hitze je 2 Min. pro Seite goldbraun backen. Mit Erdbeeren servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Laktosefrei"],zyklus:["follikel","ovulation"],
+   kal:340,prot:11,kh:52,fett:10},
+  {id:33,name:"Quinoa-Porridge mit Walnüssen",e:"🌾",kat:"Frühstück",min:18,level:"Einfach",
+   situation:["normal","follikel","proteinreich"],
+   zutaten:["80g Quinoa","250ml Mandelmilch","10 Walnüsse","1 EL Ahornsirup","½ TL Zimt","1 EL Hanfsamen","Prise Salz"],
+   zub:"Quinoa mit Mandelmilch und Salz aufkochen, 12 Min. bei niedriger Hitze garen bis cremig. Mit Ahornsirup und Zimt abschmecken. Mit gehackten Walnüssen und Hanfsamen toppen.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Proteinreich"],zyklus:["follikel","ovulation"],
+   kal:380,prot:14,kh:46,fett:16},
+  {id:34,name:"Ofengemüse mit Kräuterquark",e:"🥕",kat:"Mittagessen",min:40,level:"Einfach",
+   situation:["normal","luteal","vegetarisch"],
+   zutaten:["200g Kartoffeln","2 Möhren","1 Zucchini","1 rote Paprika","3 EL Olivenöl","Salz, Paprika, Rosmarin","150g Quark (laktosefrei)","Schnittlauch, Dill","Salz, Pfeffer"],
+   zub:"Gemüse in Würfel schneiden, mit Öl und Gewürzen vermischen. Bei 200°C 30 Min. rösten bis goldbraun. Quark mit Kräutern, Salz und Pfeffer verrühren. Zusammen servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["luteal","follikel"],
+   kal:350,prot:14,kh:40,fett:14},
+  {id:35,name:"Thunfisch-Reisnudel-Salat",e:"🐟",kat:"Mittagessen",min:15,level:"Einfach",
+   situation:["schnell","normal","follikel"],
+   zutaten:["100g Reisnudeln","1 Dose Thunfisch (in Wasser)","Gurke","Möhren","Frühlingszwiebeln (nur grün)","2 EL Reisessig","1 EL Sojasoße (glutenfrei)","Sesam","Ingwer"],
+   zub:"Reisnudeln nach Anweisung kochen, abkühlen lassen. Thunfisch und Gemüse untermischen. Dressing aus Essig, Sojasoße und Ingwer anrühren. Vermengen, mit Sesam bestreuen.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell"],zyklus:["alle"],
+   kal:340,prot:28,kh:46,fett:5},
+  {id:36,name:"Puten-Frikadellen mit Kartoffeln",e:"🥩",kat:"Abendessen",min:35,level:"Mittel",
+   situation:["normal","luteal","proteinreich"],
+   zutaten:["300g Putenhackfleisch","1 Ei","2 EL glutenfreie Haferflocken","Salz, Pfeffer","1 TL Paprikapulver (mild)","Frische Petersilie","2 EL Olivenöl","300g Kartoffeln","Gedünstete Zucchini"],
+   zub:"Hackfleisch mit Ei, Haferflocken und Gewürzen vermengen. Frikadellen formen, in Öl je 5 Min. pro Seite braten. Kartoffeln als Salzkartoffeln kochen. Mit gedünsteter Zucchini servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei"],zyklus:["luteal","follikel"],
+   kal:470,prot:38,kh:36,fett:18},
+  {id:37,name:"Ingwer-Kurkuma-Hähnchen mit Reis",e:"🍗",kat:"Abendessen",min:30,level:"Einfach",
+   situation:["normal","entzuendungshemmend"],
+   zutaten:["200g Hähnchenbrust","1 TL Kurkuma","1 TL Ingwer (frisch gerieben)","1 EL Kokosöl","Salz, Pfeffer","150g Basmati","2 Möhren","1 Zucchini"],
+   zub:"Hähnchen mit Kurkuma, Ingwer, Salz und Pfeffer einreiben. In Kokosöl 5 Min. pro Seite braten. Gemüse in der Pfanne 5 Min. mitbraten. Reis separat kochen. Zusammen servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Reflux-OK","Entzündungshemmend"],zyklus:["alle"],
+   kal:420,prot:40,kh:44,fett:10},
+  {id:38,name:"Papaya-Ingwer-Smoothie",e:"🍈",kat:"Frühstück",min:5,level:"Einfach",
+   situation:["reflux_stark","morgen_schonend","mahlzeit_schlecht"],
+   zutaten:["100g Papaya","½ unreife Banane","200ml Reismilch","1 TL frischer Ingwer","1 TL Ahornsirup","Prise Kurkuma"],
+   zub:"Papaya schälen und würfeln. Mit allen Zutaten im Mixer cremig pürieren. Sofort trinken.",
+   tags:["Low-FODMAP","Vegan","Reflux-OK","Schnell","Glutenfrei","Schonkost"],zyklus:["alle"],
+   kal:190,prot:2,kh:42,fett:2},
+  {id:39,name:"Tempeh-Gemüse-Pfanne",e:"🫘",kat:"Abendessen",min:20,level:"Einfach",
+   situation:["normal","vegan","follikel"],
+   zutaten:["200g Tempeh","1 Zucchini","1 Möhre","100g Spinat","2 EL Sesamöl","2 EL glutenfreie Sojasoße","Ingwer","Knoblauchöl (selbst gemacht, FODMAP-OK!)","Sesam","150g Reis"],
+   zub:"Tempeh würfeln, in Sesamöl goldbraun braten (5 Min.). Gemüse zugeben, 3 Min. mitbraten. Spinat zusammenfallen lassen. Mit Sojasoße und Ingwer abschmecken. Mit Sesam und Reis servieren.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Proteinreich"],zyklus:["follikel","ovulation"],
+   kal:400,prot:22,kh:44,fett:16},
+  {id:40,name:"Warmer Buchweizen-Gemüse-Eintopf",e:"🍲",kat:"Mittagessen",min:30,level:"Mittel",
+   situation:["luteal","menstruation","kalt_wetter","warm_beruhigend"],
+   zutaten:["80g Buchweizen","2 Möhren","1 Pastinake","100g Spinat","600ml Gemüsebrühe (selbst)","1 TL Kurkuma","Salz, Pfeffer","Frische Petersilie"],
+   zub:"Buchweizen und Gemüse in Brühe 20 Min. kochen. Spinat zugeben, 2 Min. ziehen lassen. Mit Kurkuma, Salz und Petersilie abschmecken.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Reflux-OK","Wärmend"],zyklus:["menstruation","luteal"],
+   kal:260,prot:9,kh:46,fett:3},
+  {id:41,name:"Ricotta-Alternatives Frühstück (laktosefrei)",e:"🥛",kat:"Frühstück",min:5,level:"Einfach",
+   situation:["normal","schnell","follikel"],
+   zutaten:["150g laktosefreier Quark","1 TL Ahornsirup","½ TL Vanille","40g Blaubeeren","1 EL Chiasamen","5 Mandeln (gehackt)"],
+   zub:"Quark mit Ahornsirup und Vanille glattrühren. Mit Blaubeeren, Chiasamen und gehackten Mandeln toppen.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Schnell","Proteinreich"],zyklus:["follikel","ovulation"],
+   kal:230,prot:18,kh:22,fett:7},
+  {id:42,name:"Kohlrabi-Möhren-Rohkost mit Thunfisch",e:"🥕",kat:"Mittagessen",min:10,level:"Einfach",
+   situation:["normal","follikel","schnell","leicht"],
+   zutaten:["1 Dose Thunfisch (Wasser)","1 Kohlrabi","2 Möhren","2 EL Olivenöl","1 EL Reisessig","Salz, Pfeffer","Frischen Dill","Reiswaffeln"],
+   zub:"Kohlrabi und Möhren in feine Streifen raspeln. Thunfisch dazugeben. Mit Öl, Essig, Dill, Salz und Pfeffer anmachen. Mit Reiswaffeln servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell"],zyklus:["follikel","ovulation"],
+   kal:280,prot:26,kh:18,fett:10},
+  {id:43,name:"Schonende Reissuppe (bei Durchfall)",e:"🍚",kat:"Mittagessen",min:20,level:"Einfach",
+   situation:["akut_schmerz","durchfall","mahlzeit_schlecht","reflux_stark"],
+   zutaten:["150g weißer Reis","800ml Wasser oder Hühnerbrühe (ohne Zwiebeln)","1 Möhre","Salz","Frischer Ingwer (1cm)","Prise Kurkuma"],
+   zub:"Reis mit Brühe, Möhre und Ingwer aufkochen. 20 Min. bei niedriger Hitze zu weichem Brei kochen. Mit Salz und Kurkuma abschmecken. Bei akuten Beschwerden auf Fett und Gewürze verzichten.",
+   tags:["Low-FODMAP","Schonkost","Glutenfrei","Laktosefrei","Reflux-OK","Durchfall"],zyklus:["alle"],
+   kal:200,prot:5,kh:42,fett:1},
+  {id:44,name:"Gebackene Möhren mit Kurkuma-Joghurt",e:"🥕",kat:"Abendessen",min:35,level:"Einfach",
+   situation:["normal","vegetarisch","luteal"],
+   zutaten:["400g Möhren","2 EL Olivenöl","1 TL Kurkuma","Salz, Kümmel","150g laktosefreier Joghurt","1 TL Tahini","Frische Petersilie","50g Quinoa (gekocht, Beilage)"],
+   zub:"Möhren schälen, halbieren, mit Öl, Kurkuma und Kümmel vermengen. 25 Min. bei 200°C rösten. Joghurt mit Tahini verrühren. Möhren mit Joghurt-Sauce und Petersilie anrichten.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["alle"],
+   kal:310,prot:11,kh:34,fett:14},
+  {id:45,name:"Kürbis-Möhren-Ingwer-Suppe (stark entzündungshemmend)",e:"🎃",kat:"Abendessen",min:25,level:"Einfach",
+   situation:["menstruation","akut_schmerz","entzuendungshemmend"],
+   zutaten:["250g Kürbis","2 Möhren","3cm Ingwer frisch","½ TL Kurkuma","½ TL Zimt","500ml Gemüsebrühe","100ml Kokosmilch (60ml)","1 EL Olivenöl","Salz","Kürbiskerne"],
+   zub:"Kürbis und Möhren würfeln, in Öl anschwitzen. Ingwer, Kurkuma, Zimt zugeben. Brühe aufgießen, 15 Min. kochen. Pürieren, Kokosmilch einrühren. Mit Kürbiskernen garnieren.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Reflux-OK","Entzündungshemmend","Wärmend"],zyklus:["menstruation","luteal"],
+   kal:210,prot:5,kh:28,fett:10},
+  {id:46,name:"Leichter Maissalat mit Garnelen",e:"🌽",kat:"Mittagessen",min:15,level:"Einfach",
+   situation:["normal","follikel","leicht","sommer"],
+   zutaten:["150g Garnelen (gegrillt)","80g Mais (Konserve, abgespült)","Gurke","Möhre","Kopfsalat","2 EL Olivenöl","1 EL Reisessig","Salz, Pfeffer","Schnittlauch"],
+   zub:"Salat, Gurke und Möhre zerkleinern. Mais und Garnelen dazugeben. Dressing aus Öl, Essig, Salz und Pfeffer anrühren. Vermengen, mit Schnittlauch bestreuen.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schnell","Leicht"],zyklus:["follikel","ovulation"],
+   kal:290,prot:24,kh:24,fett:10},
+  {id:47,name:"Rühreier mit Spinat und Feta",e:"🥚",kat:"Frühstück",min:10,level:"Einfach",
+   situation:["normal","schnell","proteinreich"],
+   zutaten:["3 Eier","80g Spinat","40g Feta","1 EL Olivenöl","Salz, Pfeffer","Frisches Basilikum","2 Reiswaffeln"],
+   zub:"Eier verquirlen. Spinat in Öl 2 Min. anschwitzen. Eier zugeben, bei niedriger Hitze cremig rühren. Feta darüber bröseln, mit Basilikum und Pfeffer servieren. Mit Reiswaffeln.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Schnell","Proteinreich"],zyklus:["alle"],
+   kal:320,prot:22,kh:8,fett:22},
+  {id:48,name:"Lachsaufstrich auf Reiswaffeln",e:"🍘",kat:"Frühstück",min:5,level:"Einfach",
+   situation:["schnell","normal","leicht"],
+   zutaten:["100g Lachs (geräuchert oder gegart)","100g laktosefreier Frischkäse (oder Quark)","Zitronenschale (wenig)","Frischer Dill","Pfeffer","4 Reiswaffeln"],
+   zub:"Lachs fein zerkleinern, mit Frischkäse und Dill verrühren. Zitronenschale und Pfeffer zugeben. Auf Reiswaffeln streichen.",
+   tags:["Low-FODMAP","Glutenfrei","Schnell"],zyklus:["alle"],
+   kal:260,prot:20,kh:18,fett:12},
+  {id:49,name:"Zucchini-Spaghetti mit Hähnchen",e:"🍝",kat:"Abendessen",min:20,level:"Einfach",
+   situation:["normal","low_carb","leicht","follikel"],
+   zutaten:["2 Zucchini (als Nudeln)","150g Hähnchenbrust","50g Parmesan","2 EL Olivenöl","Salz, Pfeffer","Frisches Basilikum","Prise Muskat"],
+   zub:"Zucchini in Spiralen oder Streifen schneiden (Spiralschneider). Hähnchen würfeln, in Öl 5 Min. braten. Zucchini-Nudeln 2 Min. mitbraten – sie dürfen noch Biss haben. Parmesan einrühren, mit Basilikum servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Low-Carb","Schnell"],zyklus:["follikel","ovulation"],
+   kal:310,prot:36,kh:8,fett:14},
+  {id:50,name:"Basmatireis mit gedünstetem Pak Choi",e:"🥬",kat:"Abendessen",min:20,level:"Einfach",
+   situation:["schonend","reflux_stark","akut_schmerz","einfach"],
+   zutaten:["150g Basmatireis","1 Pak Choi","1 EL Sesamöl","2 EL glutenfreie Sojasoße","Ingwer 1cm","200g Hähnchen oder Tofu","Sesam"],
+   zub:"Reis nach Anweisung kochen. Hähnchen/Tofu in Sesamöl braten. Pak Choi zugeben, 3 Min. mitdünsten. Mit Sojasoße und Ingwer abschmecken. Auf Reis servieren, mit Sesam bestreuen.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Reflux-OK","Einfach"],zyklus:["alle"],
+   kal:380,prot:28,kh:48,fett:9},
+  {id:51,name:"Overnight Oats (Nacht vorher)",e:"🥣",kat:"Frühstück",min:5,level:"Einfach",
+   situation:["meal_prep","normal","schnell_morgen"],
+   zutaten:["60g glutenfreie Haferflocken","200ml Mandelmilch","1 EL Chiasamen","1 TL Ahornsirup","½ TL Vanille","Blaubeeren zum Servieren","1 EL Erdnussbutter (optional)"],
+   zub:"Haferflocken mit Mandelmilch, Chiasamen, Ahornsirup und Vanille in einem Glas verrühren. Über Nacht im Kühlschrank quellen lassen (mind. 6h). Morgens mit Blaubeeren toppen.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Meal-Prep","Reflux-OK"],zyklus:["alle"],
+   kal:310,prot:8,kh:46,fett:10},
+  {id:52,name:"Gedünstetes Gemüse mit Polenta",e:"🌽",kat:"Abendessen",min:25,level:"Einfach",
+   situation:["schonend","reflux_mittel","einfach","vegetarisch"],
+   zutaten:["150g Polenta","600ml Wasser","1 Zucchini","2 Möhren","100g Spinat","2 EL Olivenöl","Salz","Frische Kräuter","40g Parmesan"],
+   zub:"Polenta in kochendes Salzwasser einrühren, 5 Min. rühren, Parmesan unterrühren. Gemüse in Olivenöl 5 Min. dünsten. Auf der Polenta anrichten.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Reflux-OK"],zyklus:["alle"],
+   kal:340,prot:11,kh:52,fett:10},
+  {id:53,name:"Kalter Reisnudelsalat (Meal-Prep)",e:"🍝",kat:"Mittagessen",min:20,level:"Einfach",
+   situation:["meal_prep","normal","schnell_mittags"],
+   zutaten:["150g Reisnudeln","150g Hähnchenbrust (gekocht)","Gurke","Möhren","Paprika (rot)","Frühlingszwiebeln (grün)","3 EL glutenfreie Sojasoße","2 EL Sesamöl","Ingwer","Sesam","Limettensaft (wenig)"],
+   zub:"Nudeln kochen, abkühlen. Hähnchen und Gemüse kleinschneiden. Alles vermengen. Dressing aus Sojasoße, Sesamöl, Ingwer und Limette anrühren. Kühl bis zu 3 Tage haltbar.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Meal-Prep"],zyklus:["alle"],
+   kal:430,prot:30,kh:54,fett:10},
+  {id:54,name:"Warmer Spinat-Ei-Salat",e:"🥬",kat:"Mittagessen",min:12,level:"Einfach",
+   situation:["normal","schnell","proteinreich","follikel"],
+   zutaten:["100g Spinat (frisch)","2 Eier (hartgekocht)","10 Mandeln","2 EL Olivenöl","1 EL Reisessig","Salz, Pfeffer","Prise Paprika","Frischer Dill"],
+   zub:"Eier kochen, halbieren. Spinat in Öl 2 Min. anwärmen. Auf Teller anrichten, Eier halbieren drauflegen. Mit Essig, Mandeln, Paprika und Dill servieren.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Schnell","Proteinreich"],zyklus:["follikel","ovulation"],
+   kal:280,prot:15,kh:5,fett:22},
+  {id:55,name:"Gedünstete Seelachsfilets",e:"🐟",kat:"Abendessen",min:20,level:"Einfach",
+   situation:["akut_schmerz","reflux_stark","schonend","einfach"],
+   zutaten:["200g Seelachsfilet","2 Möhren","1 Zucchini","Ingwer","Salz","Frischer Dill","150g Basmatireis","1 EL Olivenöl (nur zum Servieren)"],
+   zub:"Gemüse in Streifen schneiden. Fisch salzen. In einen Topf mit etwas Wasser, Gemüse und Ingwer bei geschlossenem Deckel 10 Min. dämpfen. Mit Dill und einem Tropfen Olivenöl servieren.",
+   tags:["Low-FODMAP","Glutenfrei","Laktosefrei","Schonkost","Reflux-OK"],zyklus:["alle"],
+   kal:300,prot:32,kh:40,fett:4},
+  {id:56,name:"Reisbrei mit Walnüssen und Birne (⚠️)",e:"🍚",kat:"Frühstück",min:15,level:"Einfach",
+   situation:["normal","herbst","luteal"],
+   zutaten:["100g Milchreis","300ml Mandelmilch","5 Walnüsse","½ Birne (bei Verträglichkeit!)","1 TL Ahornsirup","½ TL Zimt","Prise Kardamom"],
+   zub:"Reis mit Mandelmilch und Salz köcheln (12 Min.). Birne in kleine Würfel schneiden. Mit Zimt, Ahornsirup und Kardamom abschmecken. Birne und Walnüsse drauf.",
+   tags:["Low-FODMAP (mit Achtung)","Vegetarisch","Glutenfrei"],zyklus:["luteal"],
+   kal:350,prot:8,kh:58,fett:10},
+  {id:57,name:"Frischer Gurken-Dill-Salat",e:"🥒",kat:"Snack",min:5,level:"Einfach",
+   situation:["schnell","beilage","leicht","normal"],
+   zutaten:["1 große Gurke","150g laktosefreier Joghurt","Frischer Dill","Salz, Pfeffer","1 TL Reisessig","Prise Zucker"],
+   zub:"Gurke in Scheiben schneiden. Joghurt mit Dill, Essig, Salz, Pfeffer und Zucker verrühren. Über die Gurken geben, 10 Min. ziehen lassen.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei","Schnell","Probiotisch"],zyklus:["alle"],
+   kal:100,prot:6,kh:12,fett:2},
+  {id:58,name:"Hirse-Gemüse-Auflauf",e:"🌾",kat:"Abendessen",min:45,level:"Mittel",
+   situation:["luteal","wochenende","vegetarisch","normal"],
+   zutaten:["150g Hirse","2 Möhren","1 Zucchini","100g Spinat","200ml Gemüsebrühe","2 Eier","100g laktosefreier Joghurt","50g Parmesan","Salz, Pfeffer, Kurkuma"],
+   zub:"Hirse in Brühe 15 Min. kochen. Gemüse dünsten. Alles in Auflaufform schichten. Eier mit Joghurt verquirlen, drübergießen. Parmesan drüber. 25 Min. bei 180°C backen.",
+   tags:["Low-FODMAP","Vegetarisch","Glutenfrei"],zyklus:["luteal","follikel"],
+   kal:390,prot:20,kh:46,fett:13},
+  {id:59,name:"Leichter Möhren-Ingwer-Saft",e:"🥤",kat:"Snack",min:5,level:"Einfach",
+   situation:["morgen_schonend","reflux_mittel","schnell"],
+   zutaten:["150ml frisch gepresster Möhrensaft (verdünnt!)","100ml Wasser","1cm Ingwer frisch","Prise Kurkuma","½ TL Ahornsirup"],
+   zub:"Möhrensaft mit Wasser verdünnen (wichtig: Konzentrat ist High-FODMAP!). Ingwer fein reiben, mit Kurkuma und Ahornsirup einrühren.",
+   tags:["Low-FODMAP (verdünnt)","Vegan","Glutenfrei","Schnell"],zyklus:["alle"],
+   kal:60,prot:1,kh:14,fett:0},
+  {id:60,name:"Quinoa-Taboulé (FODMAP-Variante)",e:"🌿",kat:"Mittagessen",min:20,level:"Einfach",
+   situation:["normal","follikel","frisch","sommer"],
+   zutaten:["150g Quinoa","Gurke (gewürfelt)","Möhren (fein geraspelt)","Frühlingszwiebeln (nur grün)","Frische Petersilie, Minze","2 EL Olivenöl","1 EL Reisessig","Salz, Pfeffer","Zitronenschale (wenig)"],
+   zub:"Quinoa kochen, abkühlen lassen. Mit Gemüse und Kräutern mischen. Dressing aus Öl, Essig, Zitronenschale, Salz und Pfeffer anrühren. Vermengen, kalt servieren.",
+   tags:["Low-FODMAP","Vegan","Glutenfrei","Laktosefrei"],zyklus:["follikel","ovulation"],
+   kal:340,prot:11,kh:46,fett:12},
+
+];
+
+const CYCLE_PHASES = [
+  {id:"menstruation",name:"Menstruation",icon:"🌕",days:"Tag 1–5",bg:"#FBE0D4",
+   tip:"Wärme und Schonung. Ingwertee, Suppen, Reisbrei. Wenig rohes Gemüse, kein Koffein. Prostaglandine erhöhen Darmempfindlichkeit."},
+  {id:"follikel",name:"Follikelphase",icon:"🌱",days:"Tag 6–13",bg:"#D8EDD9",
+   tip:"Energie steigt. Gute Zeit für proteinreiche Mahlzeiten. Frisches Gemüse gut verträglich. Neue Lebensmittel ausprobieren."},
+  {id:"ovulation",name:"Eisprung",icon:"🌸",days:"Tag 14",bg:"#FADADD",
+   tip:"Höchste Energie und beste Verträglichkeit. Alle Low-FODMAP Optionen sind jetzt ideal. Leichte, frische Gerichte."},
+  {id:"luteal",name:"Lutealphase",icon:"🍂",days:"Tag 15–28",bg:"#F5E8C5",
+   tip:"Progesteron verlangsamt Darm → mehr Blähungen möglich. Warme Mahlzeiten bevorzugen, ausreichend trinken."},
+];
+
+const SYMPTOME = ["Blähungen","Bauchkrämpfe","Durchfall","Verstopfung","Sodbrennen","Reflux/Aufstoßen","Übelkeit","Völlegefühl","Müdigkeit","Kopfschmerzen","Heiserkeit","Räuspern","Bauchschmerzen","Stimmungsschwankungen","Schlafprobleme","Appetitlosigkeit"];
+
+const TC_FRAGEN = [
+  {id:"schlaf",text:"Wie hast du geschlafen?",typ:"skala",lmin:"😴 Sehr schlecht",lmax:"✨ Perfekt"},
+  {id:"stimmung",text:"Wie ist deine Stimmung heute?",typ:"skala",lmin:"😔 Gedrückt",lmax:"😊 Sehr gut"},
+  {id:"schmerz",text:"Wie stark sind Bauchbeschwerden gerade?",typ:"skala",lmin:"💚 Keine",lmax:"🔴 Stark"},
+  {id:"reflux",text:"Sodbrennen / Reflux heute?",typ:"skala",lmin:"💚 Kein",lmax:"🔴 Stark"},
+  {id:"symptome_heute",text:"Welche Symptome hast du gerade?",typ:"chips"},
+  {id:"mahlzeiten_gestern",text:"Wie gut hat das Essen gestern bekommen?",typ:"skala",lmin:"😖 Sehr schlecht",lmax:"😊 Sehr gut"},
+  {id:"stress",text:"Dein aktueller Stresslevel?",typ:"skala",lmin:"🌿 Entspannt",lmax:"⚡ Sehr gestresst"},
+  {id:"periode",text:"Bist du gerade in deiner Periode oder kurz davor?",typ:"ynu"},
+];
+
+// ── HELPERS ─────────────────────────────────────────────────────────
+const today = () => new Date().toISOString().split('T')[0];
+const fmtDate = d => new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+const tagCls = v => ({'g':'tag-g','y':'tag-y','r':'tag-r'})[v]||'tag-gr';
+const tagTxt = v => ({'g':'✅ OK','y':'⚠️ Maßen','r':'❌ Meiden'})[v]||'?';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const allRezepte = () => [...REZEPTE, ...state.eigeneRezepte];
+
+// ── SMART REZEPT-FILTER: passt Rezepte zur aktuellen Situation ────
+function getSituationScore(rezept) {
+  const letzterLog = state.symptomLogs[state.symptomLogs.length-1];
+  const todayLog = letzterLog?.datum===today()?letzterLog:null;
+  const phase = getCurrentPhase(state.zyklusStart, state.zyklusLaenge);
+  const toleranz = state.toleranz;
+
+  let score = 100; // Basis-Score
+  let warnings = [];
+  let reasons = [];
+
+  // Persönliche Unverträglichkeiten prüfen
+  const zutaten = (rezept.zutaten||[]).join(' ').toLowerCase();
+  for (const [lm, status] of Object.entries(toleranz)) {
+    if (status === 'schlecht') {
+      const lmLower = lm.toLowerCase().split(' ')[0]; // Erstes Wort
+      if (zutaten.includes(lmLower)) {
+        score -= 60;
+        warnings.push('⚠️ Enthält ' + lm + ' (du verträgst es nicht)');
+      }
+    }
+  }
+
+  // Aktuelle Beschwerden berücksichtigen
+  if (todayLog) {
+    const schmerz = todayLog.schmerz ?? 5;
+    const reflux = todayLog.reflux ?? 5;
+    const sit = rezept.situation || [];
+
+    if (schmerz >= 7) {
+      // Starke Bauchschmerzen: Schonkost bevorzugen
+      if (sit.includes('akut_schmerz') || sit.includes('schonend')) { score += 30; reasons.push('✅ Schonkost bei akuten Beschwerden'); }
+      if (!sit.includes('schonend') && !sit.includes('akut_schmerz')) { score -= 20; }
+      if (rezept.tags?.includes('Schonkost')) { score += 25; }
+    }
+    if (schmerz >= 5 && schmerz < 7) {
+      if (sit.includes('schonend')) { score += 15; }
+    }
+
+    if (reflux >= 7) {
+      // Starker Reflux: nur Reflux-OK Rezepte
+      if (rezept.tags?.includes('Reflux-OK')) { score += 25; reasons.push('✅ Reflux-freundlich'); }
+      if (sit.includes('reflux_stark')) { score += 20; }
+      if (!rezept.tags?.includes('Reflux-OK') && !sit.includes('reflux_stark')) { score -= 30; warnings.push('🔥 Nicht ideal bei Reflux'); }
+    }
+    if (reflux >= 5 && reflux < 7) {
+      if (rezept.tags?.includes('Reflux-OK')) { score += 10; }
+      if (sit.includes('reflux_mittel')) { score += 10; }
+    }
+
+    const symptome = todayLog.symptome_heute || [];
+    if (symptome.includes('Durchfall')) {
+      if (sit.includes('durchfall') || rezept.tags?.includes('Durchfall')) { score += 30; reasons.push('✅ Gut bei Durchfall'); }
+      if (rezept.tags?.includes('Schonkost')) { score += 20; }
+    }
+    if (symptome.includes('Verstopfung')) {
+      if (sit.includes('verstopfung')) { score += 20; reasons.push('✅ Ballaststoffreich'); }
+    }
+    if (symptome.includes('Blähungen') || symptome.includes('Bauchkrämpfe')) {
+      if (rezept.tags?.includes('Wärmend') || sit.includes('warm_beruhigend')) { score += 15; }
+    }
+
+    // Gestern schlecht vertragen
+    const mahlzeitenGestern = todayLog.mahlzeiten_gestern ?? 5;
+    if (mahlzeitenGestern <= 2) {
+      if (sit.includes('mahlzeit_schlecht') || rezept.tags?.includes('Schonkost')) { score += 25; reasons.push('✅ Schonend nach schlechtem Tag'); }
+    }
+  }
+
+  // Zyklusphase berücksichtigen
+  if (phase) {
+    const rZyklus = rezept.zyklus || rezept.zyklusPhase || ['alle'];
+    if (rZyklus.includes('alle') || rZyklus.includes(phase.id)) {
+      score += 20;
+      reasons.push('✅ Passt zur ' + phase.name);
+    } else {
+      score -= 10;
+    }
+  }
+
+  // Tageszeit / Mahlzeittyp wird beim Anzeigen gefiltert
+  return { score, warnings, reasons };
+}
+
+function getRezepteForSituation(kat) {
+  const alle = allRezepte();
+  return alle
+    .filter(r => !kat || (r.kat||r.kategorie) === kat)
+    .map(r => ({ ...r, _score: getSituationScore(r) }))
+    .sort((a, b) => b._score.score - a._score.score);
+}
+
+// Toleranz-Hilfsfunktionen
+function setToleranz(name, status) {
+  const updated = { ...state.toleranz, [name]: status };
+  save('toleranz', updated);
+}
+function getToleranzBadge(name) {
+  const t = state.toleranz[name];
+  if (t === 'gut') return '<span style="background:#D6EDD7;color:#2D6B30;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:700">😊 Vertrage ich</span>';
+  if (t === 'schlecht') return '<span style="background:#FBDADA;color:#9B2222;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:700">😣 Vertrage ich nicht</span>';
+  if (t === 'testen') return '<span style="background:#FDF0C0;color:#7A5800;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:700">🧪 Teste noch</span>';
+  return '';
+}
+
+function getCurrentPhase(start, len) {
+  if (!start) return null;
+  const diff = Math.floor((new Date()-new Date(start))/(86400000));
+  const tag = ((diff % len) + len) % len + 1;
+  if (tag<=5) return {...CYCLE_PHASES[0], tagNr:tag};
+  if (tag<=13) return {...CYCLE_PHASES[1], tagNr:tag};
+  if (tag===14) return {...CYCLE_PHASES[2], tagNr:tag};
+  return {...CYCLE_PHASES[3], tagNr:tag};
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────
+function navigate(page) {
+  state.page = page;
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === page);
+  });
+  renderPage();
+  document.getElementById('main').scrollTop = 0;
+}
+
+function renderPage() {
+  const m = document.getElementById('main');
+  const pages = {
+    dashboard: renderDashboard,
+    lebensmittel: renderLebensmittel,
+    tracking: renderTracking,
+    kochbuch: renderKochbuch,
+    wochenplan: renderWochenplan,
+    zyklus: renderZyklus,
+    chat: renderChat,
+    bericht: renderBericht,
+  };
+  m.innerHTML = `<div class="page">${(pages[state.page]||renderDashboard)()}</div>`;
+  bindPageEvents();
+}
+
+// ── TAGESCHECK ───────────────────────────────────────────────────────
+let tcStep = 0; let tcData = {};
+function openTagescheck() {
+  tcStep=0; tcData={};
+  // Sicherstellen dass body bereit ist
+  if(document.body) {
+    renderTCStep();
+  } else {
+    document.addEventListener('DOMContentLoaded', ()=>renderTCStep());
+  }
+}
+
+function renderTCStep() {
+  const existing = document.getElementById('tc-overlay');
+  if (existing) existing.remove();
+
+  const q = TC_FRAGEN[tcStep];
+  const total = TC_FRAGEN.length;
+  const pct = Math.round(((tcStep+1)/total)*100);
+  const val = tcData[q.id] !== undefined ? tcData[q.id] : 5;
+
+  let inputHtml = '';
+  if (q.typ==='skala') {
+    inputHtml=`
+      <input type="range" min="0" max="10" value="${val}" id="tc-range" oninput="document.getElementById('tc-rv').textContent=this.value">
+      <div class="flex-sb mt8 fs-xs c-lt">
+        <span>${q.lmin}</span>
+        <span class="fw-8 c-rose" id="tc-rv">${val}</span>
+        <span>${q.lmax}</span>
+      </div>`;
+  } else if (q.typ==='ynu') {
+    inputHtml=`<div class="flex" style="gap:10px">${['Ja','Nein','Unsicher'].map(o=>`
+      <button class="btn ${tcData[q.id]===o?'btn-primary':'btn-secondary'}" onclick="tcData['${q.id}']='${o}';renderTCStep()">${o}</button>`).join('')}
+    </div>`;
+  } else if (q.typ==='chips') {
+    const sel = tcData[q.id]||[];
+    inputHtml=`<div style="max-height:160px;overflow-y:auto">${SYMPTOME.map(s=>`
+      <span class="chip${sel.includes(s)?' sel':''}" onclick="tcToggleChip('${s}')">${s}</span>`).join('')}
+    </div>`;
+  }
+
+  const div = document.createElement('div');
+  div.id='tc-overlay'; div.className='tc-overlay';
+  div.innerHTML=`
+    <div class="tc-card">
+      <div class="flex-sb mb12">
+        <span class="fs-xs fw-7 c-lt">Tagescheck · ${tcStep+1} / ${total}</span>
+        <button onclick="closeTagescheck()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-lt)">✕</button>
+      </div>
+      <div class="pbar-wrap mb12"><div class="pbar" style="width:${pct}%"></div></div>
+      <h3 style="font-size:1.1rem;margin-bottom:18px;color:var(--warm)">${q.text}</h3>
+      ${inputHtml}
+      <button class="btn btn-primary btn-full mt16" onclick="tcNext()" style="margin-top:20px">
+        ${tcStep<total-1?'Weiter →':'✅ Tagescheck abschließen'}
+      </button>
+    </div>`;
+  document.body.appendChild(div);
+}
+
+function tcToggleChip(s) {
+  const q = TC_FRAGEN[tcStep];
+  const cur = tcData[q.id]||[];
+  tcData[q.id] = cur.includes(s)?cur.filter(x=>x!==s):[...cur,s];
+  renderTCStep();
+}
+
+function tcNext() {
+  const q = TC_FRAGEN[tcStep];
+  if (q.typ==='skala') tcData[q.id]=Number(document.getElementById('tc-range').value);
+  if (!tcData[q.id] && q.typ!=='chips') tcData[q.id]=5;
+  if (tcStep < TC_FRAGEN.length-1) { tcStep++; renderTCStep(); }
+  else {
+    const log = {...tcData, datum:today()};
+    save('symptomLogs',[...state.symptomLogs, log]);
+    save('letzterCheck', today());
+    closeTagescheck();
+    navigate(state.page);
+  }
+}
+
+function closeTagescheck() {
+  const el=document.getElementById('tc-overlay');
+  if(el)el.remove();
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────
+function renderDashboard() {
+  const log = state.symptomLogs[state.symptomLogs.length-1];
+  const todayLog = log?.datum===today()?log:null;
+  const phase = getCurrentPhase(state.zyklusStart, state.zyklusLaenge);
+  const todayMeals = state.mahlzeiten.filter(m=>m.datum===today());
+  const uniqueDays = new Set(state.mahlzeiten.map(m=>m.datum)).size;
+
+  return `
+    <div class="dash-hero">
+      <h2>Guten Morgen 🌿</h2>
+      <p>${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+      ${phase?`<div style="margin-top:10px;background:rgba(255,255,255,.5);border-radius:10px;padding:8px 12px;font-size:.82rem">
+        ${phase.icon} Zyklusphase: <strong>${phase.name}</strong> · Tag ${phase.tagNr}
+      </div>`:''}
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val">${state.mahlzeiten.length}</div><div class="stat-lbl">Mahlzeiten</div></div>
+      <div class="stat-box"><div class="stat-val">${state.symptomLogs.length}</div><div class="stat-lbl">Check-ins</div></div>
+      <div class="stat-box"><div class="stat-val">${uniqueDays}</div><div class="stat-lbl">Tage</div></div>
+    </div>
+
+    ${todayLog?`
+    <div class="card" style="background:linear-gradient(135deg,#FBE9DC,#F5D5C5)">
+      <div class="card-title">Heutiger Status 📊</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${[['Bauchbeschwerden',todayLog.schmerz??5],['Sodbrennen',todayLog.reflux??5],['Stimmung',todayLog.stimmung??5]].map(([l,v])=>`
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:130px;font-size:.78rem;font-weight:700;color:var(--warm-lt)">${l}</span>
+          <div class="pbar-wrap" style="flex:1"><div class="pbar" style="width:${v*10}%"></div></div>
+          <span style="width:24px;text-align:right;font-size:.78rem;font-weight:800;color:var(--rose)">${v}</span>
+        </div>`).join('')}
+        ${todayLog.symptome_heute?.length?`<div style="margin-top:4px">${todayLog.symptome_heute.map(s=>`<span class="tag tag-y" style="margin:2px">${s}</span>`).join('')}</div>`:''}
+      </div>
+    </div>`:`
+    <div class="card">
+      <div class="card-title">Tagescheck 📋</div>
+      <p class="fs-sm c-lt mb12">Du hast heute noch keinen Tagescheck gemacht.</p>
+      <button class="btn btn-primary btn-sm" onclick="openTagescheck()">Jetzt starten</button>
+    </div>`}
+
+    ${phase?`
+    <div class="card" style="background:linear-gradient(135deg,${phase.bg}80,white)">
+      <div class="card-title">${phase.icon} ${phase.name} – Ernährungstipp</div>
+      <p class="fs-sm" style="line-height:1.7">${phase.tip}</p>
+    </div>`:''}
+
+    ${todayMeals.length?`
+    <div class="card">
+      <div class="card-title">Heute gegessen (${todayMeals.length})</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${todayMeals.map(m=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--cream);border-radius:10px;border:1px solid var(--border)">
+          <span style="font-size:1.2rem">${m.emoji||'🍽️'}</span>
+          <div style="flex:1"><div class="fw-7 fs-sm">${esc(m.name)}</div><div class="fs-xs c-lt">${m.typ}</div></div>
+          <span class="tag ${tagCls(m.fodmap)}" style="font-size:.68rem">F</span>
+          <span class="tag ${tagCls(m.reflux)}" style="font-size:.68rem">R</span>
+          ${m.bew?'⭐'.repeat(m.bew):''}
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <div class="card">
+      <div class="card-title">🍽️ Jetzt empfohlen</div>
+      <div style="overflow-x:auto;display:flex;gap:10px;padding-bottom:4px">
+        ${getRezepteForSituation(null).filter(r=>{
+          const lm_s=Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>k.toLowerCase().split(' ')[0]);
+          return !lm_s.some(lm=>(r.zutaten||[]).some(z=>z.toLowerCase().includes(lm)));
+        }).slice(0,6).map(r=>`
+        <div onclick="navigate('kochbuch');setTimeout(()=>showRezeptDetail(${r.id}),300)"
+          style="flex-shrink:0;background:var(--cream);border-radius:12px;padding:10px 8px;border:1.5px solid ${r._score&&r._score.score>=90?'var(--sage)':'var(--border)'};cursor:pointer;width:110px;text-align:center">
+          <div style="font-size:1.5rem">${r.e||r.emoji||'🍽️'}</div>
+          <div class="fw-7 c-warm" style="font-size:.72rem;margin-top:4px;line-height:1.3">${esc(r.name)}</div>
+          <div class="c-lt" style="font-size:.65rem;margin-top:2px">${r.min||r.dauer}m · ${r.kat||r.kategorie}</div>
+          ${r._score&&r._score.score>=90?'<div style="font-size:.6rem;color:var(--sage);font-weight:700;margin-top:2px">✨ Ideal jetzt</div>':''}
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="quick-ref">
+      <div class="card-title" style="margin-bottom:10px">🔥 Reflux Schnell-Referenz</div>
+      <div class="fs-sm" style="line-height:1.9">
+        <div>❌ <strong>Meiden:</strong> Kaffee, Alkohol, Fettiges, Tomaten, Zitrusfrüchte, Pfefferminze, Schokolade</div>
+        <div>✅ <strong>OK:</strong> Haferflocken, Ingwertee, Banane, mageres Fleisch, basisches Gemüse</div>
+        <div>⏰ <strong>Regeln:</strong> Kleine Portionen · 3h vor Schlaf nichts mehr · Erhöht schlafen</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── LEBENSMITTEL ──────────────────────────────────────────────────────
+let lmSuche=''; let lmKat='Alle'; let lmFilter='Alle'; let lmToleranzFilter='alle';
+function renderLebensmittel() {
+  const kats=['Alle','Gemüse','Obst','Getreide','Protein','Milch','Fette & Öle','Nüsse & Samen','Getränke','Gewürze','Süßes','Sonstiges'];
+  const items=LEBENSMITTEL.filter(l=>{
+    const ms=l.name.toLowerCase().includes(lmSuche.toLowerCase());
+    const mk=lmKat==='Alle'||l.kat===lmKat;
+    const mf=lmFilter==='Alle'||l.f===lmFilter;
+    const tol=state.toleranz[l.name];
+    const mt=lmToleranzFilter==='alle'||
+      (lmToleranzFilter==='gut'&&tol==='gut')||
+      (lmToleranzFilter==='schlecht'&&tol==='schlecht')||
+      (lmToleranzFilter==='testen'&&tol==='testen')||
+      (lmToleranzFilter==='unbewertet'&&!tol);
+    return ms&&mk&&mf&&mt;
+  });
+
+  const schlechtCount = Object.values(state.toleranz).filter(v=>v==='schlecht').length;
+  const gutCount = Object.values(state.toleranz).filter(v=>v==='gut').length;
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Lebensmittelverzeichnis</h1>
+    <p class="fs-xs c-lt mb8">${LEBENSMITTEL.length} Einträge · FODMAP & Reflux-Bewertung</p>
+    ${schlechtCount>0||gutCount>0?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      ${gutCount>0?`<span class="tag tag-g" style="font-size:.75rem">😊 ${gutCount} verträgt sie</span>`:''}
+      ${schlechtCount>0?`<span class="tag tag-r" style="font-size:.75rem">😣 ${schlechtCount} verträgt sie nicht</span>`:''}
+      <span class="fs-xs c-lt">· tippe an zum Bearbeiten</span>
+    </div>
+    ${schlechtCount>0?`<div style="background:#FFF5F5;border:1px solid #FBDADA;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.78rem">
+      <div class="fw-7" style="color:#9B2222;margin-bottom:4px">😣 Nicht verträglich:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>`<span style="background:#FBDADA;color:#9B2222;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600">${esc(k)}</span>`).join('')}
+      </div>
+    </div>`:''}
+    ${Object.entries(state.toleranz).filter(([k,v])=>v==='testen').length?`<div style="background:#FFF8E0;border:1px solid #F5E0A0;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.78rem">
+      <div class="fw-7" style="color:#7A5800;margin-bottom:4px">🧪 Teste noch:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${Object.entries(state.toleranz).filter(([k,v])=>v==='testen').map(([k])=>`<span style="background:#FDF0C0;color:#7A5800;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600">${esc(k)}</span>`).join('')}
+      </div>
+    </div>`:''}`:
+    '<p class="fs-xs c-lt mb12">💡 Tippe ein Lebensmittel an und markiere deine Verträglichkeit – die Rezepte passen sich dann automatisch an!</p>'}
+
+    <div class="card" style="padding:14px">
+      <input class="input mb8" placeholder="🔍 Suchen..." id="lm-suche" value="${esc(lmSuche)}" oninput="lmSuche=this.value;document.getElementById('lm-grid').innerHTML=getLmGrid()">
+      <div class="g2">
+        <select class="select" id="lm-kat" onchange="lmKat=this.value;document.getElementById('lm-grid').innerHTML=getLmGrid()">
+          ${kats.map(k=>`<option${lmKat===k?' selected':''}>${k}</option>`).join('')}
+        </select>
+        <select class="select" id="lm-filt" onchange="lmFilter=this.value;document.getElementById('lm-grid').innerHTML=getLmGrid()">
+          <option value="Alle"${lmFilter==='Alle'?' selected':''}>Alle FODMAP</option>
+          <option value="g"${lmFilter==='g'?' selected':''}>✅ Erlaubt</option>
+          <option value="y"${lmFilter==='y'?' selected':''}>⚠️ In Maßen</option>
+          <option value="r"${lmFilter==='r'?' selected':''}>❌ Meiden</option>
+        </select>
+        <select class="select" style="width:160px" onchange="lmToleranzFilter=this.value;document.getElementById('lm-grid').innerHTML=getLmGrid()">
+          <option value="alle">Alle Vertr.</option>
+          <option value="gut">😊 Vertrage ich</option>
+          <option value="schlecht">😣 Vertrage nicht</option>
+          <option value="testen">🧪 Teste noch</option>
+          <option value="unbewertet">Noch nicht bewertet</option>
+        </select>
+      </div>
+      <div class="flex-c mt8 fs-xs c-lt" style="gap:14px;flex-wrap:wrap">
+        <span>✅ Low-FODMAP/OK</span><span>⚠️ Kleine Menge</span><span>❌ Meiden</span>
+        <span style="font-weight:700">F=FODMAP · R=Reflux</span>
+      </div>
+    </div>
+
+    <div id="lm-grid">${getLmGrid()}</div>
+  `;
+}
+
+function getLmGrid() {
+  const items=LEBENSMITTEL.filter(l=>{
+    const ms=l.name.toLowerCase().includes(lmSuche.toLowerCase());
+    const mk=lmKat==='Alle'||l.kat===lmKat;
+    const mf=lmFilter==='Alle'||l.f===lmFilter;
+    const tol=state.toleranz[l.name];
+    const mt=lmToleranzFilter==='alle'||
+      (lmToleranzFilter==='gut'&&tol==='gut')||
+      (lmToleranzFilter==='schlecht'&&tol==='schlecht')||
+      (lmToleranzFilter==='testen'&&tol==='testen')||
+      (lmToleranzFilter==='unbewertet'&&!tol);
+    return ms&&mk&&mf&&mt;
+  });
+  if(!items.length) return '<p class="ta-c c-lt" style="padding:24px 0">Keine Treffer</p>';
+  return `<div class="food-grid">${items.map(l=>`
+    <div class="food-card" onclick="showLmDetail(${JSON.stringify(l).replace(/"/g,'&quot;')})"
+      style="${state.toleranz[l.name]==='schlecht'?'border-color:#D97474;background:#FFF5F5':''}${state.toleranz[l.name]==='gut'?'border-color:#8BAF8D;background:#F5FFF5':''}${state.toleranz[l.name]==='testen'?'border-color:#F5C842;':''}">
+      <div style="font-size:1.5rem;margin-bottom:4px">${l.e}</div>
+      <div class="fw-7 fs-sm mb4">${esc(l.name)}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span class="tag ${tagCls(l.f)}" style="font-size:.62rem">F: ${tagTxt(l.f)}</span>
+        <span class="tag ${tagCls(l.r)}" style="font-size:.62rem">R: ${tagTxt(l.r)}</span>
+        ${state.toleranz[l.name]==='gut'?'<span title="Vertrage ich" style="font-size:.75rem">😊</span>':''}
+        ${state.toleranz[l.name]==='schlecht'?'<span title="Vertrage ich nicht" style="font-size:.75rem">😣</span>':''}
+        ${state.toleranz[l.name]==='testen'?'<span title="Teste noch" style="font-size:.75rem">🧪</span>':''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function showLmDetail(l) {
+  const existing = document.getElementById('lm-overlay');
+  if(existing) existing.remove();
+
+  const tol = state.toleranz[l.name];
+  const safeId = 'lm_' + l.name.replace(/[^a-zA-Z0-9]/g,'_');
+
+  // Build toleranz buttons via DOM to avoid quote conflicts
+  const el = document.createElement('div');
+  el.className = 'overlay centered';
+  el.id = 'lm-overlay';
+  el.onclick = e => { if(e.target===el) el.remove(); };
+
+  // Info badges HTML (safe strings)
+  let infoBadges = '';
+  if(l.f==='r') infoBadges += '<span class="tag tag-r">⚠️ High-FODMAP</span> ';
+  if(l.f==='y') infoBadges += '<span class="tag tag-y">⚠️ Portionsgröße beachten</span> ';
+  if(l.r==='r') infoBadges += '<span style="background:#FFE8D0;color:#9B3B00;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700">🔥 Reflux-Trigger</span> ';
+  if(l.f==='g' && l.r==='g') infoBadges += '<span class="tag tag-g">✅ Doppelt grün – ideal!</span>';
+
+  // Toleranz warning box
+  let tolBox = '';
+  if(tol==='schlecht') tolBox = '<div class="fs-xs" style="margin-top:8px;color:#9B2222;background:#FBDADA;padding:6px 10px;border-radius:8px">Rezepte mit diesem Lebensmittel werden im Kochbuch als ungeeignet markiert.</div>';
+
+  el.innerHTML = `
+    <div class="sheet modal-sheet" id="${safeId}_sheet">
+      <div class="ta-c" style="margin-bottom:14px">
+        <div style="font-size:3rem">${l.e}</div>
+        <h2 class="c-warm" style="font-size:1.25rem">${esc(l.name)}</h2>
+        <span class="tag tag-gr">${l.kat}</span>
+      </div>
+      <div class="g2 mb12">
+        <div style="background:var(--cream);border-radius:12px;padding:12px;text-align:center">
+          <div class="fs-xs fw-7 c-lt mb4">FODMAP</div>
+          <span class="tag ${tagCls(l.f)}">${tagTxt(l.f)}</span>
+        </div>
+        <div style="background:var(--cream);border-radius:12px;padding:12px;text-align:center">
+          <div class="fs-xs fw-7 c-lt mb4">Reflux</div>
+          <span class="tag ${tagCls(l.r)}">${tagTxt(l.r)}</span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        ${l.info ? '<p class="fs-sm" style="line-height:1.65;color:var(--text);margin-bottom:8px">' + esc(l.info) + '</p>' : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${infoBadges}</div>
+      </div>
+      <div style="background:var(--cream);border-radius:14px;padding:14px;margin-bottom:14px">
+        <div class="fs-xs fw-7 c-lt mb8">🙋 Meine persönliche Verträglichkeit</div>
+        <div id="${safeId}_tolBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div id="${safeId}_tolMsg">${tolBox}</div>
+        <div id="${safeId}_tolReset"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="document.getElementById('lm-overlay').remove()">Schließen</button>
+    </div>`;
+
+  document.body.appendChild(el);
+
+  // Build toleranz buttons via DOM (avoids all quote issues)
+  const btnsEl = document.getElementById(safeId + '_tolBtns');
+  const resetEl = document.getElementById(safeId + '_tolReset');
+
+  const tolOptions = [
+    { status:'gut',      label:'😊 Vertrage ich',   bg:tol==='gut'?'#D6EDD7':'white', border:tol==='gut'?'#2D6B30':'var(--border)', color:tol==='gut'?'#2D6B30':'var(--text-lt)' },
+    { status:'testen',   label:'🧪 Teste noch',      bg:tol==='testen'?'#FDF0C0':'white', border:tol==='testen'?'#7A5800':'var(--border)', color:tol==='testen'?'#7A5800':'var(--text-lt)' },
+    { status:'schlecht', label:'😣 Vertrage nicht',  bg:tol==='schlecht'?'#FBDADA':'white', border:tol==='schlecht'?'#9B2222':'var(--border)', color:tol==='schlecht'?'#9B2222':'var(--text-lt)' },
+  ];
+
+  tolOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt.label;
+    btn.style.cssText = 'flex:1;min-width:80px;padding:8px 6px;border-radius:10px;border:2px solid ' + opt.border + ';background:' + opt.bg + ';cursor:pointer;font-size:.78rem;font-weight:700;color:' + opt.color;
+    btn.onclick = () => setToleranzAndRefresh(l.name, opt.status);
+    btnsEl.appendChild(btn);
+  });
+
+  if(tol) {
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Markierung entfernen';
+    resetBtn.style.cssText = 'margin-top:8px;background:none;border:none;cursor:pointer;font-size:.72rem;color:var(--text-lt);text-decoration:underline';
+    resetBtn.onclick = () => setToleranzAndRefresh(l.name, null);
+    resetEl.appendChild(resetBtn);
+  }
+}
+
+function setToleranzAndRefresh(name, status) {
+  if(status === null) {
+    const updated = {...state.toleranz};
+    delete updated[name];
+    save('toleranz', updated);
+  } else {
+    setToleranz(name, status);
+  }
+  const lm = LEBENSMITTEL.find(l => l.name === name);
+  if(lm) { document.getElementById('lm-overlay')?.remove(); showLmDetail(lm); }
+  const grid = document.getElementById('lm-grid');
+  if(grid) grid.innerHTML = getLmGrid();
+}
+
+// ── TRACKING ───────────────────────────────────────────────────────
+let trkDate=today(); let trkFormOpen=false;
+let trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today()};
+
+function renderTracking() {
+  const types=['Frühstück','Mittagessen','Abendessen','Snack'];
+  const meals=state.mahlzeiten.filter(m=>m.datum===trkDate)
+    .sort((a,b)=>types.indexOf(a.typ)-types.indexOf(b.typ));
+  const emojis=['🍽️','🥣','🥗','🍲','🍜','🥚','🍳','🥩','🐟','🍗','🥦','🥔','🍌','🥤','🫖'];
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Mahlzeiten-Tracking</h1>
+    <p class="fs-xs c-lt mb12">Was du isst und wie es dir bekommt</p>
+
+    <div class="card" style="padding:14px">
+      <div class="flex-sb mb12">
+        <div class="flex-c">
+          <span class="fs-xs fw-7 c-lt">Datum:</span>
+          <input type="date" class="input" style="width:160px;padding:8px 10px" value="${trkDate}" onchange="trkDate=this.value;renderPage()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="trkFormOpen=!trkFormOpen;renderPage()">
+          ${trkFormOpen?'✕ Abbrechen':'+ Erfassen'}
+        </button>
+      </div>
+
+      ${trkFormOpen?`
+      <div style="background:var(--cream);border-radius:14px;padding:16px;border:1px solid var(--border)">
+        <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">Neue Mahlzeit</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          ${emojis.map(e=>`<span onclick="trkForm.emoji='${e}';document.getElementById('trkEmoji').value='${e}';this.parentNode.querySelectorAll('span').forEach(s=>s.style.background='transparent');this.style.background='var(--peach)'" 
+            style="cursor:pointer;font-size:1.3rem;padding:4px 6px;border-radius:8px;background:${trkForm.emoji===e?'var(--peach)':'transparent'}">${e}</span>`).join('')}
+        </div>
+        <input type="hidden" id="trkEmoji" value="${trkForm.emoji}">
+        <div class="field"><label class="label">Name *</label>
+          <input class="input" id="trkName" value="${esc(trkForm.name)}" placeholder="Mahlzeit benennen..." oninput="trkForm.name=this.value"></div>
+        <div class="g2">
+          <div class="field"><label class="label">Typ</label>
+            <select class="select" onchange="trkForm.typ=this.value">${types.map(t=>`<option${trkForm.typ===t?' selected':''}>${t}</option>`).join('')}</select></div>
+          <div class="field"><label class="label">Bewertet am</label>
+            <input type="date" class="input" value="${trkForm.datum}" onchange="trkForm.datum=this.value"></div>
+        </div>
+        <div class="g2">
+          <div class="field"><label class="label">FODMAP</label>
+            <select class="select" onchange="trkForm.fodmap=this.value">
+              <option value="g"${trkForm.fodmap==='g'?' selected':''}>✅ Low-FODMAP</option>
+              <option value="y"${trkForm.fodmap==='y'?' selected':''}>⚠️ Gemischt</option>
+              <option value="r"${trkForm.fodmap==='r'?' selected':''}>❌ High-FODMAP</option>
+            </select></div>
+          <div class="field"><label class="label">Reflux</label>
+            <select class="select" onchange="trkForm.reflux=this.value">
+              <option value="g"${trkForm.reflux==='g'?' selected':''}>✅ Reflux-OK</option>
+              <option value="y"${trkForm.reflux==='y'?' selected':''}>⚠️ In Maßen</option>
+              <option value="r"${trkForm.reflux==='r'?' selected':''}>❌ Trigger</option>
+            </select></div>
+        </div>
+        <div class="field"><label class="label">Wie hat es dir bekommen?</label>
+          <div style="display:flex;gap:8px">${[1,2,3,4,5].map(s=>`
+            <span onclick="trkForm.bew=${s};renderPage()" style="font-size:1.5rem;cursor:pointer">${s<=trkForm.bew?'⭐':'☆'}</span>`).join('')}
+          </div></div>
+        <div class="field"><label class="label">Notiz</label>
+          <textarea class="textarea" rows="2" placeholder="Wie hast du dich danach gefühlt?" oninput="trkForm.notiz=this.value">${esc(trkForm.notiz)}</textarea></div>
+        <div class="flex" style="gap:8px">
+          <button class="btn btn-primary" onclick="saveMahlzeit()">✅ Speichern</button>
+          <button class="btn btn-secondary" onclick="trkFormOpen=false;renderPage()">Abbrechen</button>
+        </div>
+      </div>`:''}
+    </div>
+
+    ${meals.length===0&&!trkFormOpen?`<div class="card ta-c"><p class="c-lt" style="padding:20px 0">Noch keine Mahlzeiten für diesen Tag 🍽️</p></div>`:''}
+
+    ${types.map(typ=>{
+      const g=meals.filter(m=>m.typ===typ);
+      if(!g.length)return '';
+      return `
+        <div class="sect-hd">${typ}</div>
+        ${g.map(m=>`
+        <div class="card" style="padding:14px;margin-bottom:8px">
+          <div class="flex-sb">
+            <div class="flex-c">
+              <span style="font-size:1.4rem">${m.emoji||'🍽️'}</span>
+              <div>
+                <div class="fw-7 fs-md">${esc(m.name)}</div>
+                ${m.notiz?`<div class="fs-xs c-lt mt4">${esc(m.notiz)}</div>`:''}
+              </div>
+            </div>
+            <button onclick="deleteMahlzeit(${m.id})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-lt)">🗑️</button>
+          </div>
+          <div class="flex-c mt8" style="flex-wrap:wrap;gap:5px">
+            <span class="tag ${tagCls(m.fodmap)}" style="font-size:.7rem">FODMAP</span>
+            <span class="tag ${tagCls(m.reflux)}" style="font-size:.7rem">Reflux</span>
+            ${m.bew?`<span style="font-size:.85rem">${'⭐'.repeat(m.bew)}</span>`:''}
+            <span class="fs-xs c-lt">${m.datum}</span>
+          </div>
+        </div>`).join('')}`;
+    }).join('')}
+  `;
+}
+
+function saveMahlzeit() {
+  const name=document.getElementById('trkName')?.value||trkForm.name;
+  if(!name.trim()){alert('Bitte Name eingeben');return;}
+  const m={...trkForm,name,emoji:document.getElementById('trkEmoji')?.value||trkForm.emoji,id:Date.now()};
+  save('mahlzeiten',[...state.mahlzeiten,m]);
+  trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today()};
+  trkFormOpen=false;
+  renderPage();
+}
+
+function deleteMahlzeit(id) {
+  save('mahlzeiten',state.mahlzeiten.filter(m=>m.id!==id));
+  renderPage();
+}
+
+// ── KOCHBUCH ───────────────────────────────────────────────────────
+let kbSuche=''; let kbKat='Alle'; let kbNeuOpen=false; let kbFilter='alle'; let kbZyklus='alle';
+let kbNeu={name:'',emoji:'🍽️',kat:'Mittagessen',min:30,level:'Einfach',zutaten:'',zub:'',tags:''};
+
+function renderKochbuch() {
+  const rezepte=allRezepte();
+  const kats=['Alle','Frühstück','Mittagessen','Abendessen','Snack'];
+  const filtered=rezepte.filter(r=>{
+    const ms=r.name.toLowerCase().includes(kbSuche.toLowerCase())||r.tags?.some(t=>t.toLowerCase().includes(kbSuche.toLowerCase()));
+    const mk=kbKat==='Alle'||r.kat===kbKat||r.kategorie===kbKat;
+    return ms&&mk;
+  });
+
+  const letzterLog=state.symptomLogs[state.symptomLogs.length-1];
+  const todayLog=letzterLog?.datum===today()?letzterLog:null;
+  const phase=getCurrentPhase(state.zyklusStart,state.zyklusLaenge);
+  const schlechtCount=Object.values(state.toleranz).filter(v=>v==='schlecht').length;
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Kochbuch</h1>
+    <p class="fs-xs c-lt mb8">${rezepte.length} Rezepte · ${REZEPTE.length} eingebaut · ${state.eigeneRezepte.length} eigene</p>
+
+    ${todayLog||schlechtCount>0?`
+    <div style="background:linear-gradient(135deg,#EDF5EE,#D8EDD9);border-radius:14px;padding:12px 14px;margin-bottom:14px">
+      <div class="fw-7" style="font-size:.8rem;color:var(--warm);margin-bottom:6px">🎯 Rezepte werden angepasst an:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;font-size:.72rem">
+        ${todayLog&&(todayLog.schmerz??0)>=7?'<span class="tag tag-y">🔴 Starke Bauchschmerzen</span>':''}
+        ${todayLog&&(todayLog.reflux??0)>=7?'<span class="tag tag-y">🔥 Starker Reflux</span>':''}
+        ${todayLog&&(todayLog.schmerz??0)<5&&(todayLog.reflux??0)<5?'<span class="tag tag-g">💚 Guter Tag</span>':''}
+        ${phase?`<span class="tag tag-p">${phase.icon} ${phase.name}</span>`:''}
+        ${schlechtCount>0?`<span class="tag tag-r">😣 ${schlechtCount} Unverträglichkeit${schlechtCount>1?'en':''}</span>`:''}
+      </div>
+    </div>`:''}
+
+    <div class="card" style="padding:14px">
+      <input class="input mb8" placeholder="🔍 Rezept oder Tag suchen..." oninput="kbSuche=this.value;document.getElementById('kb-grid').innerHTML=getKbGrid()" value="${esc(kbSuche)}">
+      <div class="flex" style="gap:8px">
+        <select class="select" onchange="kbKat=this.value;document.getElementById('kb-grid').innerHTML=getKbGrid()">
+          ${kats.map(k=>`<option${kbKat===k?' selected':''}>${k}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="kbNeuOpen=!kbNeuOpen;renderPage()" style="white-space:nowrap">+ Eigenes</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+        <span class="fs-xs fw-7 c-lt" style="align-self:center">Schnellfilter:</span>
+        <button class="btn btn-xs ${kbFilter==='alle'?'btn-primary':'btn-secondary'}" onclick="kbFilter='alle';document.getElementById('kb-grid').innerHTML=getKbGrid()">Alle</button>
+        <button class="btn btn-xs ${kbFilter==='ideal'?'btn-primary':'btn-secondary'}" onclick="kbFilter='ideal';document.getElementById('kb-grid').innerHTML=getKbGrid()">✨ Ideal jetzt</button>
+        <button class="btn btn-xs ${kbFilter==='vertraeglich'?'btn-primary':'btn-secondary'}" onclick="kbFilter='vertraeglich';document.getElementById('kb-grid').innerHTML=getKbGrid()">😊 Verträglich</button>
+        <button class="btn btn-xs ${kbFilter==='schonkost'?'btn-primary':'btn-secondary'}" onclick="kbFilter='schonkost';document.getElementById('kb-grid').innerHTML=getKbGrid()">🌿 Schonkost</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+        <span class="fs-xs fw-7 c-lt" style="align-self:center">Zyklus:</span>
+        ${[
+          {id:'alle',    label:'🗓️ Alle'},
+          {id:'menstruation', label:'🌕 Periode'},
+          {id:'follikel',     label:'🌱 Follikel'},
+          {id:'ovulation',    label:'🌸 Eisprung'},
+          {id:'luteal',       label:'🍂 Luteal'},
+        ].map(p=>`<button class="btn btn-xs ${kbZyklus===p.id?'btn-primary':'btn-secondary'}"
+          onclick="kbZyklus='${p.id}';document.getElementById('kb-grid').innerHTML=getKbGrid()">${p.label}</button>`).join('')}
+      </div>
+    </div>
+
+    ${kbNeuOpen?`
+    <div class="card">
+      <div class="card-title">Neues Rezept hinzufügen</div>
+      <div class="g2">
+        <div class="field"><label class="label">Name *</label><input class="input" id="kb-name" placeholder="Rezeptname" value="${esc(kbNeu.name)}" oninput="kbNeu.name=this.value"></div>
+        <div class="field"><label class="label">Emoji</label><input class="input" id="kb-emoji" value="${kbNeu.emoji}" oninput="kbNeu.emoji=this.value" style="font-size:1.3rem"></div>
+        <div class="field"><label class="label">Kategorie</label><select class="select" onchange="kbNeu.kat=this.value">${['Frühstück','Mittagessen','Abendessen','Snack'].map(k=>`<option${kbNeu.kat===k?' selected':''}>${k}</option>`).join('')}</select></div>
+        <div class="field"><label class="label">Dauer (Min)</label><input type="number" class="input" value="${kbNeu.min}" oninput="kbNeu.min=Number(this.value)"></div>
+      </div>
+      <div class="field"><label class="label">Zutaten (eine pro Zeile)</label><textarea class="textarea" rows="4" oninput="kbNeu.zutaten=this.value" placeholder="200g Hähnchen&#10;1 Zucchini&#10;...">${esc(kbNeu.zutaten)}</textarea></div>
+      <div class="field"><label class="label">Zubereitung</label><textarea class="textarea" rows="4" oninput="kbNeu.zub=this.value">${esc(kbNeu.zub)}</textarea></div>
+      <div class="field"><label class="label">Tags (kommagetrennt)</label><input class="input" placeholder="Low-FODMAP, Glutenfrei, Schnell" oninput="kbNeu.tags=this.value" value="${esc(kbNeu.tags)}"></div>
+      <div class="flex">
+        <button class="btn btn-primary" onclick="saveEigenesRezept()">✅ Speichern</button>
+        <button class="btn btn-secondary" onclick="kbNeuOpen=false;renderPage()">Abbrechen</button>
+      </div>
+    </div>`:''}
+
+    <div id="kb-grid">${getKbGrid()}</div>
+  `;
+}
+
+function getKbGrid() {
+  const rezepte = getRezepteForSituation(kbKat==='Alle'?null:kbKat);
+  const lm_schlecht = Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>k.toLowerCase().split(' ')[0]);
+
+  const filtered = rezepte.filter(r=>{
+    // Suchtext
+    const ms = r.name.toLowerCase().includes(kbSuche.toLowerCase()) ||
+               (r.tags||[]).some(t=>t.toLowerCase().includes(kbSuche.toLowerCase()));
+    if(!ms) return false;
+
+    // Schnellfilter
+    if(kbFilter==='ideal')       return (r._score?.score||0) >= 90;
+    if(kbFilter==='vertraeglich') return !lm_schlecht.some(lm=>(r.zutaten||[]).some(z=>z.toLowerCase().includes(lm)));
+    if(kbFilter==='schonkost')   return (r.tags||[]).some(t=>t==='Schonkost'||t==='Reflux-OK');
+
+    // Zyklusfilter
+    if(kbZyklus !== 'alle') {
+      const rz = r.zyklus || r.zyklusPhase || ['alle'];
+      if(!rz.includes('alle') && !rz.includes(kbZyklus)) return false;
+    }
+
+    return true;
+  });
+
+  if(!filtered.length) return '<p class="c-lt ta-c" style="padding:28px 0">Keine Rezepte gefunden 🔍<br><span class="fs-xs">Filter anpassen oder Suche leeren</span></p>';
+
+  // Wenn Zyklusfilter aktiv oder kbFilter !== 'alle': alles flach anzeigen (kein "Ideal"-Grouping)
+  const useGrouping = !kbSuche && kbFilter==='alle' && kbZyklus==='alle';
+
+  if(useGrouping) {
+    const top  = filtered.filter(r=>(r._score?.score||0) >= 90);
+    const rest = filtered.filter(r=>(r._score?.score||0) < 90);
+    let html = '';
+    if(top.length) {
+      html += `<div class="sect-hd" style="display:flex;align-items:center;gap:6px">✨ Ideal für jetzt <span style="font-size:.63rem;color:var(--text-lt);font-weight:400">(Zustand + Zyklus + Verträglichkeit)</span></div>`;
+      html += top.slice(0,6).map(r=>rezeptCard(r)).join('');
+      if(rest.length) html += `<div class="sect-hd mt12">Alle Rezepte (${rest.length})</div>`;
+    }
+    html += rest.map(r=>rezeptCard(r)).join('');
+    return html;
+  }
+
+  // Flache Anzeige mit Anzahl
+  const label = kbZyklus !== 'alle'
+    ? ({menstruation:'🌕 Periode',follikel:'🌱 Follikelphase',ovulation:'🌸 Eisprung',luteal:'🍂 Lutealphase'})[kbZyklus]
+    : kbFilter !== 'alle' ? ({ideal:'✨ Ideal jetzt',vertraeglich:'😊 Verträglich',schonkost:'🌿 Schonkost'})[kbFilter] : '';
+  let html = '';
+  if(label) html += `<div class="sect-hd">${label} · ${filtered.length} Rezepte</div>`;
+  html += filtered.map(r=>rezeptCard(r)).join('');
+  return html;
+}
+
+function rezeptCard(r) {
+  const score = r._score || {score:100,warnings:[],reasons:[]};
+  const hasWarning = score.warnings.length > 0;
+  const isIdeal = score.score >= 90;
+  const lm_schlecht = Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>k.toLowerCase().split(' ')[0]);
+  const hatUnvertraegliches = (r.zutaten||[]).some(z=>lm_schlecht.some(lm=>z.toLowerCase().includes(lm)));
+
+  return `
+    <div class="card" style="cursor:pointer;${hatUnvertraegliches?'border-color:#D97474;opacity:.7':''}${isIdeal&&!hatUnvertraegliches?'border-color:var(--sage);':''}${score.score<60?'opacity:.65':''}" onclick="${hatUnvertraegliches?'showUnvertraeglichWarnung('+r.id+')':'showRezeptDetail('+r.id+')'}">
+      <div class="flex-sb">
+        <div class="flex-c">
+          <span style="font-size:1.8rem">${r.e||r.emoji}</span>
+          <div style="flex:1">
+            <div class="fw-7 fs-md c-warm">${esc(r.name)}</div>
+            <div class="fs-xs c-lt">⏱ ${r.min||r.dauer} Min · ${r.level||r.schwierigkeit} · ${r.kat||r.kategorie}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          ${isIdeal&&!hatUnvertraegliches?'<span style="font-size:.72rem;background:#D6EDD7;color:#2D6B30;padding:2px 7px;border-radius:10px;font-weight:700">✨ Ideal</span>':''}
+          ${hatUnvertraegliches?'<span style="font-size:.72rem;background:#FBDADA;color:#9B2222;padding:2px 7px;border-radius:10px;font-weight:700">😣 Unverträglich</span>':''}
+          <span style="font-size:1.1rem;color:var(--warm-lt)">›</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
+        ${(r.tags||[]).slice(0,3).map(t=>`<span class="tag tag-b" style="font-size:.65rem">${t}</span>`).join('')}
+        ${score.reasons.slice(0,1).map(r2=>`<span style="background:#EDF5EE;color:#2D6B30;padding:2px 8px;border-radius:10px;font-size:.65rem">${r2}</span>`).join('')}
+        ${state.eigeneRezepte.find(e=>e.id===r.id)?'<span class="tag tag-g" style="font-size:.65rem">Eigenes</span>':''}
+      </div>
+    </div>`;
+}
+
+function showUnvertraeglichWarnung(id) {
+  const r = allRezepte().find(x=>x.id===id);
+  if(!r) return;
+  const lm_schlecht = Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>k);
+  const betroffene = (r.zutaten||[]).filter(z=>lm_schlecht.some(lm=>z.toLowerCase().includes(lm.toLowerCase().split(' ')[0])));
+  if(confirm('⚠️ Dieses Rezept enthält Zutaten die du nicht verträgst:\n\n' + betroffene.join('\n') + '\n\nTrotzdem anzeigen?')) {
+    showRezeptDetail(id);
+  }
+}
+
+function saveEigenesRezept() {
+  const name=document.getElementById('kb-name')?.value||kbNeu.name;
+  if(!name.trim())return;
+  const r={...kbNeu,name,emoji:document.getElementById('kb-emoji')?.value||kbNeu.emoji,
+    id:Date.now(),zutaten:kbNeu.zutaten.split('\n').filter(Boolean),
+    tags:kbNeu.tags.split(',').map(t=>t.trim()).filter(Boolean),
+    kal:0,prot:0,kh:0,fett:0,zyklus:['alle']};
+  save('eigeneRezepte',[...state.eigeneRezepte,r]);
+  kbNeu={name:'',emoji:'🍽️',kat:'Mittagessen',min:30,level:'Einfach',zutaten:'',zub:'',tags:''};
+  kbNeuOpen=false;
+  renderPage();
+}
+
+function showRezeptDetail(id) {
+  const r=allRezepte().find(x=>x.id===id);
+  if(!r)return;
+  const zutaten=r.zutaten||(r.zutaten||[]);
+  const el=document.createElement('div');
+  el.className='overlay centered';
+  el.id='rez-overlay';
+  el.onclick=e=>{if(e.target===el)el.remove();};
+  el.innerHTML=`
+    <div class="sheet modal-sheet">
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:2.5rem">${r.e||r.emoji}</div>
+        <h2 class="c-warm" style="font-size:1.2rem">${esc(r.name)}</h2>
+        <div class="fs-xs c-lt">⏱ ${r.min||r.dauer} Min · ${r.level||r.schwierigkeit} · ${r.kat||r.kategorie}</div>
+      </div>
+      ${(r.kal||0)>0?`
+      <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto">
+        ${[['🔥',r.kal,'kcal'],['💪',r.prot+'g','Protein'],['🌾',r.kh+'g','Kohlenh.'],['💧',r.fett+'g','Fett']].map(([i,v,l])=>`
+        <div style="background:var(--cream);border-radius:10px;padding:8px 12px;text-align:center;flex-shrink:0">
+          <div class="fs-xs c-lt">${i} ${l}</div><div class="fw-8 c-warm">${v}</div>
+        </div>`).join('')}
+      </div>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">
+        ${(r.tags||[]).map(t=>`<span class="tag tag-b" style="font-size:.75rem">${t}</span>`).join('')}
+      </div>
+      <div class="fw-7 c-warm mb8" style="font-family:'Playfair Display',serif">Zutaten</div>
+      <div style="background:var(--cream);border-radius:10px;padding:12px;margin-bottom:14px">
+        ${(Array.isArray(r.zutaten)?r.zutaten:[]).map(z=>`<div class="fs-sm" style="padding:4px 0;border-bottom:1px solid var(--border)">• ${esc(z)}</div>`).join('')}
+      </div>
+      <div class="fw-7 c-warm mb8" style="font-family:'Playfair Display',serif">Zubereitung</div>
+      <p class="fs-sm" style="line-height:1.7;margin-bottom:16px">${esc(r.zub||r.zubereitung||'')}</p>
+      <div class="flex" style="gap:8px">
+        <button class="btn btn-sage btn-sm" onclick="addRezeptToEinkauf(${r.id})">🛒 Einkaufsliste</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('rez-overlay').remove()">Schließen</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+function addRezeptToEinkauf(id) {
+  const r=allRezepte().find(x=>x.id===id);
+  if(!r)return;
+  const neu=(r.zutaten||[]).map(z=>({text:z,done:false,id:Date.now()+Math.random()}));
+  save('einkaufsliste',[...state.einkaufsliste,...neu]);
+  alert('Zutaten zur Einkaufsliste hinzugefügt! ✅');
+}
+
+// ── WOCHENPLAN ─────────────────────────────────────────────────────
+let wpActiveSlot=null; let wpShowShop=false;
+const WD=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const MT=['Frühstück','Mittagessen','Abendessen'];
+
+function renderWochenplan() {
+  const phase=getCurrentPhase(state.zyklusStart,state.zyklusLaenge);
+  const letzterLog=state.symptomLogs[state.symptomLogs.length-1];
+  const hatBeschwerden=letzterLog&&(letzterLog.schmerz>6||letzterLog.reflux>6);
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Wochenplan</h1>
+    <p class="fs-xs c-lt mb12">Plane deine Mahlzeiten & erstelle die Einkaufsliste</p>
+
+    ${hatBeschwerden?`<div style="background:#FFF0E0;border:1.5px solid #F5C5A3;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.82rem">
+      ⚠️ Aktuelle Beschwerden erkannt – Plan wird schonend angepasst.
+    </div>`:''}
+
+    <div class="flex" style="flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="generatePlan()">✨ Auto-Plan</button>
+      <button class="btn btn-sage btn-sm" onclick="generateShoppingList();wpShowShop=true;renderPage()">🛒 Einkaufsliste</button>
+      <button class="btn btn-secondary btn-sm" onclick="save('wochenplan',{});renderPage()">Plan leeren</button>
+    </div>
+
+    <div class="week-scroll">
+      <div class="week-grid">
+        ${WD.map(tag=>`
+        <div class="day-col">
+          <div class="day-lbl">${tag}</div>
+          ${MT.map(typ=>{
+            const k=`${tag}_${typ}`;
+            const m=state.wochenplan[k];
+            return `<div class="meal-slot${m?' filled':''}" onclick="wpActiveSlot={tag:'${tag}',typ:'${typ}'};renderWPSlotSheet()">
+              <div class="mtype">${typ}</div>
+              ${m?`<div style="font-weight:600;font-size:.72rem">${m.e||m.emoji||'🍽️'} ${esc(m.name)}</div>`:`<div class="c-lt" style="font-size:.68rem">+ wählen</div>`}
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+      </div>
+    </div>
+
+    ${wpShowShop?`
+    <div class="card mt12">
+      <div class="flex-sb mb12">
+        <div class="card-title" style="margin-bottom:0">🛒 Einkaufsliste (${state.einkaufsliste.filter(i=>!i.done).length} offen)</div>
+        <div class="flex" style="gap:6px">
+          <button class="btn btn-secondary btn-xs" onclick="save('einkaufsliste',state.einkaufsliste.filter(i=>!i.done));renderPage()">✓ erledigte weg</button>
+          <button class="btn btn-secondary btn-xs" onclick="wpShowShop=false;renderPage()">✕</button>
+        </div>
+      </div>
+      ${state.einkaufsliste.length===0?`<p class="c-lt fs-sm">Liste ist leer</p>`:`
+      <div>
+        ${state.einkaufsliste.map(item=>`
+        <div class="shop-item${item.done?' done':''}">
+          <input type="checkbox" class="shop-check" ${item.done?'checked':''} onchange="toggleShopItem('${item.id}')">
+          <span class="fs-sm">${esc(item.text)}</span>
+        </div>`).join('')}
+      </div>`}
+    </div>`:''}
+  `;
+}
+
+function renderWPSlotSheet() {
+  if(!wpActiveSlot)return;
+  const {tag,typ}=wpActiveSlot;
+  const rezepte=allRezepte().filter(r=>(r.kat||r.kategorie)===typ);
+  const el=document.createElement('div');
+  el.className='overlay';el.id='wp-sheet';
+  el.onclick=e=>{if(e.target===el)el.remove();};
+  el.innerHTML=`
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="flex-sb mb14">
+        <h3 style="font-family:'Playfair Display',serif;color:var(--warm)">${tag} · ${typ}</h3>
+        <button onclick="document.getElementById('wp-sheet').remove()" style="background:none;border:none;cursor:pointer;font-size:1.2rem">✕</button>
+      </div>
+      ${state.wochenplan[`${tag}_${typ}`]?`<button class="btn btn-secondary btn-sm mb12" onclick="setWPMeal('${tag}','${typ}',null)">Slot leeren</button>`:''}
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:65dvh;overflow-y:auto">
+        ${rezepte.map(r=>`
+        <div onclick="setWPMeal('${tag}','${typ}',${r.id})" style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--cream);border-radius:10px;border:1px solid var(--border);cursor:pointer;active:border-color:var(--rose)">
+          <span style="font-size:1.3rem">${r.e||r.emoji}</span>
+          <div>
+            <div class="fw-7 fs-sm">${esc(r.name)}</div>
+            <div class="fs-xs c-lt">${r.min||r.dauer} Min</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+function setWPMeal(tag,typ,id) {
+  const r=id?allRezepte().find(x=>x.id===id):null;
+  const updated={...state.wochenplan};
+  if(r)updated[`${tag}_${typ}`]=r;
+  else delete updated[`${tag}_${typ}`];
+  save('wochenplan',updated);
+  document.getElementById('wp-sheet')?.remove();
+  renderPage();
+}
+
+function generatePlan() {
+  const plan={};
+  const lm_schlecht = Object.entries(state.toleranz).filter(([k,v])=>v==='schlecht').map(([k])=>k.toLowerCase().split(' ')[0]);
+
+  WD.forEach(tag=>{
+    MT.forEach(typ=>{
+      // Nutze smart scoring
+      const scored = getRezepteForSituation(typ)
+        .filter(r=>{
+          // Keine unverträglichen Zutaten
+          const hatUnv = lm_schlecht.length > 0 && (r.zutaten||[]).some(z=>lm_schlecht.some(lm=>z.toLowerCase().includes(lm)));
+          return !hatUnv;
+        });
+      if(!scored.length) return;
+      // Top 5 nehmen, zufällig einen wählen (verhindert Wiederholungen)
+      const top = scored.slice(0,Math.min(8,scored.length));
+      plan[tag+'_'+typ]=top[Math.floor(Math.random()*top.length)];
+    });
+  });
+  save('wochenplan',plan);
+  renderPage();
+}
+
+function generateShoppingList() {
+  const alle=[];
+  Object.values(state.wochenplan).forEach(r=>{if(r?.zutaten)alle.push(...r.zutaten);});
+  const einzig=[...new Set(alle)];
+  save('einkaufsliste',einzig.map(z=>({text:z,done:false,id:Date.now()+Math.random()})));
+}
+
+function toggleShopItem(id) {
+  save('einkaufsliste',state.einkaufsliste.map(i=>i.id==id?{...i,done:!i.done}:i));
+  renderPage();
+}
+
+// ── ZYKLUS ─────────────────────────────────────────────────────────
+let zykManual=null;
+function renderZyklus() {
+  const phase=getCurrentPhase(state.zyklusStart,state.zyklusLaenge);
+  const aktiv=zykManual!==null?CYCLE_PHASES[zykManual]:phase;
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Zyklus & Ernährung</h1>
+    <p class="fs-xs c-lt mb12">Passe deine Ernährung deiner Zyklusphase an</p>
+
+    <div class="card">
+      <div class="card-title">Zyklus konfigurieren</div>
+      <div class="g2">
+        <div class="field"><label class="label">Erster Tag der letzten Periode</label>
+          <input type="date" class="input" value="${state.zyklusStart}" onchange="save('zyklusStart',this.value);zykManual=null;renderPage()"></div>
+        <div class="field"><label class="label">Zykluslänge (Tage)</label>
+          <input type="number" class="input" value="${state.zyklusLaenge}" min="21" max="35" onchange="save('zyklusLaenge',Number(this.value));renderPage()"></div>
+      </div>
+      ${phase?`<div style="background:var(--cream);border-radius:10px;padding:10px 14px;font-size:.85rem">
+        📅 Aktuell: <strong>Tag ${phase.tagNr}</strong> → <strong>${phase.name}</strong>
+      </div>`:'<p class="fs-xs c-lt">Bitte Startdatum eingeben</p>'}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Phase wählen / überschreiben</div>
+      <div class="cycle-strip">
+        ${CYCLE_PHASES.map((p,i)=>`
+        <div class="c-phase${aktiv?.id===p.id?' active':''}" style="background:${aktiv?.id===p.id?p.bg+99:p.bg+'44'}" onclick="zykManual=${aktiv?.id===p.id&&zykManual!==null?'null':i};renderPage()">
+          <div style="font-size:1.8rem">${p.icon}</div>
+          <div class="fw-7" style="font-size:.72rem;margin-top:3px">${p.name}</div>
+          <div class="fs-xs c-lt">${p.days}</div>
+        </div>`).join('')}
+      </div>
+      ${zykManual!==null?`<div class="ta-c mt8"><button class="btn btn-secondary btn-xs" onclick="zykManual=null;renderPage()">Automatik wiederherstellen</button></div>`:''}
+    </div>
+
+    ${aktiv?`
+    <div class="card" style="background:linear-gradient(135deg,${aktiv.bg}55,white)">
+      <div style="font-size:2rem;margin-bottom:8px">${aktiv.icon}</div>
+      <div class="card-title">${aktiv.name} – Ernährungstipps</div>
+      <p class="fs-sm" style="line-height:1.75;margin-bottom:16px">${aktiv.tip}</p>
+      <div class="fw-7 c-warm mb8" style="font-family:'Playfair Display',serif;font-size:.95rem">Empfohlene Rezepte:</div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+        ${REZEPTE.filter(r=>(r.zyklus||r.zyklusPhase||[]).some(z=>z==='alle'||z===aktiv.id)).slice(0,5).map(r=>`
+        <div onclick="showRezeptDetail(${r.id})" style="flex-shrink:0;background:white;border-radius:12px;padding:10px;border:1px solid var(--border);text-align:center;width:110px;cursor:pointer">
+          <div style="font-size:1.5rem">${r.e||r.emoji}</div>
+          <div class="fw-7 fs-xs c-warm mt4">${esc(r.name)}</div>
+          <div class="fs-xs c-lt">${r.min||r.dauer}m</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔬 Zyklus & Reizdarm</div>
+      <div class="fs-sm" style="line-height:1.85">
+        <p>🩸 <strong>Menstruation:</strong> Prostaglandine erhöhen Darmempfindlichkeit → mehr Krämpfe & Durchfall. Ibuprofen kann Sodbrennen verstärken → lieber Wärmflasche.</p>
+        <p class="mt8">🌱 <strong>Follikelphase:</strong> Östrogen steigt → Darm ruhiger. Beste Zeit für neue Lebensmittel zum Testen.</p>
+        <p class="mt8">🍂 <strong>Lutealphase:</strong> Progesteron verlangsamt Darm → Verstopfung, Blähungen möglich. Mehr warme, weiche Kost.</p>
+        <p class="mt8">💊 <strong>Pille & Reizdarm:</strong> Hormonelle Verhütung kann Verdauungsbeschwerden beeinflussen – bei Verdacht mit Arzt besprechen.</p>
+      </div>
+    </div>`:''}
+  `;
+}
+
+// ── KI-CHAT ────────────────────────────────────────────────────────
+let chatLoading=false;
+function renderChat() {
+  const suggestions=["Ich hatte heute starkes Sodbrennen","Was kann ich vor der Periode essen?","Ich habe Blähungen und Krämpfe","Welche Lebensmittel lösen Reflux aus?","Analysiere meine letzten Tage"];
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">KI-Ernährungsberaterin</h1>
+    <p class="fs-xs c-lt mb12">Schildere Beschwerden im Fließtext – ich erkenne Muster und helfe dir</p>
+
+    <div class="card">
+      <div class="flex-sb mb12">
+        <div class="card-title" style="margin-bottom:0">💬 Chat</div>
+        <button class="btn btn-secondary btn-xs" onclick="if(confirm('Chat leeren?')){save('chatHistory',[]);renderPage()}">Leeren</button>
+      </div>
+
+      ${state.chatHistory.length===0?`
+      <div class="mb12">
+        <p class="fs-xs c-lt mb8">Schnell-Eingaben:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${suggestions.map(s=>`<button class="btn btn-secondary btn-xs" onclick="document.getElementById('ci').value='${s}'">${s}</button>`).join('')}
+        </div>
+      </div>`:''}
+
+      <div class="chat-area" id="chat-area">
+        ${state.chatHistory.length===0?`
+        <div class="msg ai">
+          <div class="avatar">🌿</div>
+          <div class="bubble">Hallo! Ich bin deine Ernährungsberaterin für Reizdarm, Reflux und zyklusabhängige Beschwerden. Erzähl mir wie es dir geht – ich erkenne Muster und gebe praktische Tipps. 💚</div>
+        </div>`:''}
+        ${state.chatHistory.map(m=>`
+        <div class="msg ${m.role==='user'?'user':'ai'}">
+          <div class="avatar">${m.role==='user'?'🙋':'🌿'}</div>
+          <div class="bubble">${esc(m.content)}</div>
+        </div>`).join('')}
+        ${chatLoading?`<div class="msg ai"><div class="avatar">🌿</div><div class="bubble c-lt">Analysiere... ✨</div></div>`:''}
+      </div>
+
+      <div class="chat-input-row">
+        <textarea class="input" id="ci" rows="1" style="resize:none;min-height:44px" placeholder="Beschreibe deine Beschwerden... (Enter = Senden)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+        <button class="btn btn-primary btn-icon" onclick="sendChat()" ${chatLoading?'disabled':''}>➤</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Tipps für bessere Antworten</div>
+      <div class="fs-sm" style="line-height:1.85">
+        <p>• <strong>Wann</strong> treten Beschwerden auf und <strong>was hast du vorher gegessen</strong>?</p>
+        <p class="mt4">• Erwähne deinen <strong>Stresslevel</strong> – Stress verstärkt Reizdarm deutlich</p>
+        <p class="mt4">• Nenne deine <strong>Zyklusphase</strong> für hormonelle Zusammenhänge</p>
+        <p class="mt4">• Schildere auch <strong>mehrere Tage</strong> – ich erkenne dann Muster</p>
+      </div>
+    </div>
+  `;
+}
+
+async function sendChat() {
+  const input=document.getElementById('ci');
+  const text=input?.value?.trim();
+  if(!text||chatLoading)return;
+
+  const letzterLog=state.symptomLogs[state.symptomLogs.length-1];
+  const heutigeMeals=state.mahlzeiten.filter(m=>m.datum===today());
+  const phase=getCurrentPhase(state.zyklusStart,state.zyklusLaenge);
+
+  const systemPrompt=`Du bist eine einfühlsame, erfahrene Ernährungsberaterin für:
+- Reizdarmsyndrom (Low-FODMAP, Langzeiternährung – weiß was sie verträgt)
+- Sodbrennen und saures Aufstoßen  
+- Stillen Reflux (Räuspern, Heiserkeit, Kloßgefühl)
+- Zyklusabhängige Darmbeschwerden
+
+Aktuell:
+${letzterLog?`Letzter Check: Bauch ${letzterLog.schmerz??5}/10, Reflux ${letzterLog.reflux??5}/10, Stimmung ${letzterLog.stimmung??5}/10`:'Kein Check vorhanden'}
+${heutigeMeals.length?`Heutige Mahlzeiten: ${heutigeMeals.map(m=>m.name).join(', ')}`:'Noch keine Mahlzeiten heute'}
+${phase?`Zyklusphase: ${phase.name} (Tag ${phase.tagNr})`:'Zyklus nicht konfiguriert'}
+
+Regeln:
+- Antworte IMMER auf Deutsch
+- Warmherzig und empathisch, aber fachlich korrekt
+- Erkenne Muster in Text (Text-Mining)
+- Stelle bei Unklarheit eine gezielte Rückfrage
+- Bei ernsteren Symptomen immer Arztbesuch empfehlen
+- Maximal 4-5 Sätze, klar und hilfreich
+- Bezug auf FODMAP und Reflux wenn relevant`;
+
+  const userMsg={role:'user',content:text,ts:Date.now()};
+  const newHistory=[...state.chatHistory,userMsg];
+  save('chatHistory',newHistory);
+  input.value='';
+  chatLoading=true;
+  renderPage();
+  document.getElementById('chat-area')?.scrollTo(0,9999);
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:systemPrompt,
+        messages:newHistory.map(m=>({role:m.role,content:m.content}))
+      })
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Entschuldigung, es gab einen Fehler.';
+    save('chatHistory',[...newHistory,{role:'assistant',content:reply,ts:Date.now()}]);
+  } catch(e) {
+    save('chatHistory',[...newHistory,{role:'assistant',content:'Verbindungsfehler. Bitte erneut versuchen. 🙏',ts:Date.now()}]);
+  }
+  chatLoading=false;
+  renderPage();
+  setTimeout(()=>document.getElementById('chat-area')?.scrollTo(0,9999),100);
+}
+
+// ── BERICHT ────────────────────────────────────────────────────────
+let berZeitraum=7;
+function renderBericht() {
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-berZeitraum);
+  const logs=state.symptomLogs.filter(l=>new Date(l.datum)>=cutoff);
+  const meals=state.mahlzeiten.filter(m=>new Date(m.datum)>=cutoff);
+  const avg=(k)=>logs.length?(logs.reduce((s,l)=>s+(l[k]??5),0)/logs.length).toFixed(1):'–';
+  const symCount={};
+  logs.forEach(l=>(l.symptome_heute||[]).forEach(s=>{symCount[s]=(symCount[s]||0)+1;}));
+  const topSym=Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const schlechtMeals=meals.filter(m=>m.bew<=2&&m.bew>0);
+  const gutMeals=meals.filter(m=>m.bew>=4);
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Gesundheitsbericht</h1>
+    <p class="fs-xs c-lt mb12">Für den Arzttermin exportierbar</p>
+
+    <div class="card">
+      <div class="flex-c flex-wrap mb14" style="gap:8px;flex-wrap:wrap">
+        ${[7,14,30].map(t=>`<button class="btn btn-sm ${berZeitraum===t?'btn-primary':'btn-secondary'}" onclick="berZeitraum=${t};renderPage()">Letzte ${t} Tage</button>`).join('')}
+        <button class="btn btn-sage btn-sm" onclick="exportBericht()" style="margin-left:auto">📄 PDF</button>
+      </div>
+
+      ${logs.length===0?`<p class="c-lt ta-c" style="padding:24px 0">Noch keine Daten für diesen Zeitraum</p>`:`
+      <div class="rep-grid mb14">
+        ${[['🔴 Bauch',avg('schmerz')],['🔥 Reflux',avg('reflux')],['😊 Stimmung',avg('stimmung')],['😴 Schlaf',avg('schlaf')],['⚡ Stress',avg('stress')],['🍽️ Mahlzeiten',meals.length]].map(([l,v])=>`
+        <div class="rep-box">
+          <div class="fs-xs c-lt">${l}</div>
+          <div class="stat-val">${v}</div>
+        </div>`).join('')}
+      </div>
+
+      ${topSym.length?`
+      <div class="mb14">
+        <div class="sect-hd">Häufigste Symptome</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${topSym.map(([s,n])=>`<span class="tag tag-y">${s} <strong>(${n}×)</strong></span>`).join('')}
+        </div>
+      </div>`:''}
+
+      ${schlechtMeals.length?`
+      <div class="mb14">
+        <div class="sect-hd">⚠️ Schlecht vertragen (1-2 Sterne)</div>
+        ${schlechtMeals.map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#FFF0F0;border-radius:8px;margin-bottom:5px;border:1px solid #FBDADA">
+          <span>${m.emoji||'🍽️'}</span>
+          <span class="fs-sm"><strong>${m.datum}:</strong> ${esc(m.name)}</span>
+          <span class="tag ${tagCls(m.fodmap)}" style="font-size:.68rem;margin-left:auto">F</span>
+          <span class="tag ${tagCls(m.reflux)}" style="font-size:.68rem">R</span>
+        </div>`).join('')}
+      </div>`:''}
+
+      ${gutMeals.length?`
+      <div class="mb14">
+        <div class="sect-hd">✅ Gut vertragen (4-5 Sterne)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${gutMeals.map(m=>`<span class="tag tag-g" style="font-size:.8rem">${m.emoji||'🍽️'} ${esc(m.name)}</span>`).join('')}
+        </div>
+      </div>`:''}
+
+      <div style="background:#FFF8F0;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:.82rem">
+        ⚕️ Klicke auf <strong>PDF</strong> um einen arztgerechten Bericht zu erstellen.
+      </div>
+
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--warm);margin-bottom:8px">💾 Datensicherung</div>
+        <p class="fs-sm c-lt mb12">Alle deine Einträge als Datei sichern oder wiederherstellen.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="exportData()">📤 Exportieren</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📥 Importieren</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+        <p class="fs-xs c-lt mt8">Export = alle Daten als .json Datei · Import = Daten wiederherstellen</p>
+      </div>`}
+    </div>
+  `;
+}
+
+function exportData() {
+  const data = {
+    version: '1.4',
+    exportDatum: today(),
+    mahlzeiten: state.mahlzeiten,
+    symptomLogs: state.symptomLogs,
+    wochenplan: state.wochenplan,
+    einkaufsliste: state.einkaufsliste,
+    eigeneRezepte: state.eigeneRezepte,
+    zyklusStart: state.zyklusStart,
+    zyklusLaenge: state.zyklusLaenge,
+    toleranz: state.toleranz,
+    letzterCheck: state.letzterCheck,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'darmglueck-backup-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.version) { alert('Ungültige Backup-Datei.'); return; }
+      if(data.mahlzeiten)  save('mahlzeiten', data.mahlzeiten);
+      if(data.symptomLogs) save('symptomLogs', data.symptomLogs);
+      if(data.wochenplan)  save('wochenplan', data.wochenplan);
+      if(data.einkaufsliste) save('einkaufsliste', data.einkaufsliste);
+      if(data.eigeneRezepte) save('eigeneRezepte', data.eigeneRezepte);
+      if(data.zyklusStart !== undefined) save('zyklusStart', data.zyklusStart);
+      if(data.zyklusLaenge) save('zyklusLaenge', data.zyklusLaenge);
+      if(data.toleranz) save('toleranz', data.toleranz);
+      if(data.letzterCheck) save('letzterCheck', data.letzterCheck);
+      alert('✅ Daten erfolgreich importiert! (' + (data.mahlzeiten?.length||0) + ' Mahlzeiten, ' + (data.symptomLogs?.length||0) + ' Check-ins)');
+      renderPage();
+    } catch(err) {
+      alert('Fehler beim Importieren: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportBericht() {
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-berZeitraum);
+  const logs=state.symptomLogs.filter(l=>new Date(l.datum)>=cutoff);
+  const meals=state.mahlzeiten.filter(m=>new Date(m.datum)>=cutoff);
+  const avg=(k)=>logs.length?(logs.reduce((s,l)=>s+(l[k]??5),0)/logs.length).toFixed(1):'–';
+  const symCount={};
+  logs.forEach(l=>(l.symptome_heute||[]).forEach(s=>{symCount[s]=(symCount[s]||0)+1;}));
+  const topSym=Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const schlechtMeals=meals.filter(m=>m.bew<=2&&m.bew>0);
+  const gutMeals=meals.filter(m=>m.bew>=4);
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+  <title>Darmglück Bericht</title>
+  <style>
+    body{font-family:Georgia,serif;max-width:750px;margin:40px auto;padding:20px;color:#2D1A0E;line-height:1.6}
+    h1{color:#6B4E3D;border-bottom:2px solid #E8927C;padding-bottom:10px;font-size:1.6rem}
+    h2{color:#6B4E3D;margin-top:28px;font-size:1.15rem;border-left:3px solid #E8927C;padding-left:10px}
+    .meta{background:#FDF6EE;border-radius:8px;padding:12px 16px;margin:16px 0;font-size:.9rem}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+    .box{background:#FDF6EE;border:1px solid #EDD8CA;border-radius:8px;padding:12px;text-align:center}
+    .val{font-size:1.6rem;font-weight:bold;color:#E8927C}
+    .lbl{font-size:.75rem;color:#7A5C4E;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.88rem}
+    th{background:#F5C5A3;padding:8px 10px;text-align:left;font-weight:bold}
+    td{padding:7px 10px;border-bottom:1px solid #EDD8CA}
+    tr:nth-child(even)td{background:#FDF6EE}
+    .sym-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .sym{background:#FDF0C0;color:#7A5800;padding:3px 10px;border-radius:20px;font-size:.82rem;font-weight:bold}
+    .disclaimer{background:#FFF8F0;border:1px solid #F5C5A3;border-radius:8px;padding:14px;margin-top:28px;font-size:.82rem}
+    .btn-print{display:inline-block;margin-top:20px;padding:11px 26px;background:#E8927C;color:white;border:none;border-radius:20px;cursor:pointer;font-size:.95rem;font-family:Georgia,serif}
+    @media print{.btn-print{display:none}}
+  </style></head><body>
+  <h1>🌿 Darmglück – Gesundheitsbericht</h1>
+  <div class="meta">
+    <strong>Zeitraum:</strong> ${fmtDate(cutoff.toISOString())} bis ${fmtDate(new Date().toISOString())}<br>
+    <strong>Erstellt am:</strong> ${fmtDate(new Date().toISOString())}<br>
+    <strong>Diagnosen:</strong> Reizdarmsyndrom · Sodbrennen / Reflux · Stiller Reflux · Zyklusabhängige Darmbeschwerden
+  </div>
+
+  <h2>📊 Durchschnittswerte (${logs.length} Tages-Check-ins)</h2>
+  <div class="grid">
+    ${[['🔴 Bauchbeschwerden',avg('schmerz'),'/ 10'],['🔥 Reflux/Sodbrennen',avg('reflux'),'/ 10'],['😊 Stimmung',avg('stimmung'),'/ 10'],['😴 Schlafqualität',avg('schlaf'),'/ 10'],['⚡ Stresslevel',avg('stress'),'/ 10'],['🍽️ Mahlzeiten',meals.length,'erfasst']].map(([l,v,u])=>`
+    <div class="box"><div class="val">${v}</div><div class="lbl">${l} ${u}</div></div>`).join('')}
+  </div>
+
+  ${topSym.length?`
+  <h2>🔴 Häufigste Symptome</h2>
+  <div class="sym-list">${topSym.map(([s,n])=>`<span class="sym">${s} (${n}×)</span>`).join('')}</div>`:''}
+
+  ${schlechtMeals.length?`
+  <h2>⚠️ Schlecht vertragene Mahlzeiten</h2>
+  <table><tr><th>Datum</th><th>Mahlzeit</th><th>FODMAP</th><th>Reflux</th><th>Bewertung</th></tr>
+  ${schlechtMeals.map(m=>`<tr><td>${m.datum}</td><td>${m.name}</td><td>${{'g':'OK','y':'Maßen','r':'Schlecht'}[m.fodmap]||'?'}</td><td>${{'g':'OK','y':'Maßen','r':'Trigger'}[m.reflux]||'?'}</td><td>${'★'.repeat(m.bew)}</td></tr>`).join('')}
+  </table>`:''}
+
+  <h2>📝 Vollständige Tages-Check-Übersicht</h2>
+  ${logs.length?`
+  <table><tr><th>Datum</th><th>Bauch</th><th>Reflux</th><th>Stimmung</th><th>Schlaf</th><th>Stress</th><th>Symptome</th></tr>
+  ${logs.map(l=>`<tr><td>${l.datum}</td><td>${l.schmerz??'–'}</td><td>${l.reflux??'–'}</td><td>${l.stimmung??'–'}</td><td>${l.schlaf??'–'}</td><td>${l.stress??'–'}</td><td style="font-size:.78rem">${(l.symptome_heute||[]).join(', ')||'–'}</td></tr>`).join('')}
+  </table>`:'<p>Keine Einträge im Zeitraum.</p>'}
+
+  <div class="disclaimer">
+    <strong>⚕️ Wichtiger Hinweis für medizinisches Fachpersonal:</strong><br>
+    Dieser Bericht wurde automatisch von der App "Darmglück" auf Basis von Selbstangaben erstellt. Die Daten dienen der Unterstützung beim Arztgespräch und ersetzen keine klinische Diagnose oder medizinische Untersuchung. Alle Angaben basieren auf subjektiver Selbstwahrnehmung (Skala 0–10).
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ Drucken / Als PDF speichern</button>
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(),400);
+}
+
+// ── EVENT BINDING ──────────────────────────────────────────────────
+function bindPageEvents() {
+  // Autofocus chat
+  if(state.page==='chat') {
+    setTimeout(()=>{
+      document.getElementById('chat-area')?.scrollTo(0,9999);
+    },100);
+  }
+}
+
+// ── INIT ────────────────────────────────────────────────────────────
+function init() {
+  renderPage();
+
+  // Storage-Check: Banner zeigen wenn kein persistenter Speicher
+  if(S.isTemp()) {
+    const banner = document.getElementById('storage-banner');
+    if(banner) banner.style.display = 'block';
+  }
+
+  // Tagescheck beim Start
+  if(state.letzterCheck !== today()) {
+    openTagescheck();
+  }
+}
+
+// init() wird vom async IDB-Block oben aufgerufen
+</script>
+</body>
+</html>

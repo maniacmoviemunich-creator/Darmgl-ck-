@@ -1369,7 +1369,7 @@ function getSituationScore(rezept) {
   const phase = getCurrentPhase(state.zyklusStart, state.zyklusLaenge);
   const toleranz = state.toleranz;
 
-  let score = 100; // Basis-Score
+  let score = 50; // Basis-Score (neutral)
   let warnings = [];
   let reasons = [];
 
@@ -1434,12 +1434,21 @@ function getSituationScore(rezept) {
   // Zyklusphase berücksichtigen
   if (phase) {
     const rZyklus = rezept.zyklus || rezept.zyklusPhase || ['alle'];
-    if (rZyklus.includes('alle') || rZyklus.includes(phase.id)) {
-      score += 20;
-      reasons.push('✅ Passt zur ' + phase.name);
+    if (rZyklus.includes(phase.id)) {
+      // Exakt passend zur aktuellen Phase: großer Bonus
+      score += 40;
+      reasons.push('✅ Perfekt für ' + phase.name);
+    } else if (rZyklus.includes('alle')) {
+      // Für alle Phasen geeignet: kleiner Bonus
+      score += 10;
     } else {
-      score -= 10;
+      // Falsche Phase: Abzug
+      score -= 30;
+      warnings.push('⚠️ Nicht optimal für ' + phase.name);
     }
+  } else {
+    // Kein Zyklus konfiguriert: neutrale Basis
+    score += 10;
   }
 
   // Tageszeit / Mahlzeittyp wird beim Anzeigen gefiltert
@@ -1877,115 +1886,191 @@ function setToleranzAndRefresh(name, status) {
 }
 
 // ── TRACKING ───────────────────────────────────────────────────────
-let trkDate=today(); let trkFormOpen=false;
+let trkDate=today(); let trkFormOpen=false; let trkEditId=null;
 let trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today()};
 
 function renderTracking() {
   const types=['Frühstück','Mittagessen','Abendessen','Snack'];
   const meals=state.mahlzeiten.filter(m=>m.datum===trkDate)
     .sort((a,b)=>types.indexOf(a.typ)-types.indexOf(b.typ));
-  const emojis=['🍽️','🥣','🥗','🍲','🍜','🥚','🍳','🥩','🐟','🍗','🥦','🥔','🍌','🥤','🫖'];
+  const emojis=['🍽️','🥣','🥗','🍲','🍜','🥚','🍳','🥩','🐟','🍗','🥦','🥔','🍌','🥤','🫖','🍵','🫙','🧆'];
+
+  // Datum-Navigation: Pfeile für Vor/Zurück
+  const prevDate = new Date(trkDate); prevDate.setDate(prevDate.getDate()-1);
+  const nextDate = new Date(trkDate); nextDate.setDate(nextDate.getDate()+1);
+  const nextStr  = nextDate.toISOString().split('T')[0];
+  const prevStr  = prevDate.toISOString().split('T')[0];
+  const isToday  = trkDate === today();
+  const datumLabel = isToday ? 'Heute' :
+    new Date(trkDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
 
   return `
     <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Mahlzeiten-Tracking</h1>
-    <p class="fs-xs c-lt mb12">Was du isst und wie es dir bekommt</p>
+    <p class="fs-xs c-lt mb12">Erfasse und bearbeite deine Mahlzeiten – auch für vergangene Tage</p>
 
     <div class="card" style="padding:14px">
       <div class="flex-sb mb12">
-        <div class="flex-c">
-          <span class="fs-xs fw-7 c-lt">Datum:</span>
-          <input type="date" class="input" style="width:160px;padding:8px 10px" value="${trkDate}" onchange="trkDate=this.value;renderPage()">
+        <!-- Datum-Navigation -->
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="trkDate='${prevStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem">‹</button>
+          <div style="text-align:center">
+            <div class="fw-7 fs-sm c-warm">${datumLabel}</div>
+            <input type="date" class="input" style="width:140px;padding:4px 8px;font-size:.72rem;margin-top:2px" value="${trkDate}" onchange="trkDate=this.value;renderPage()">
+          </div>
+          <button onclick="trkDate='${nextStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem${isToday?';opacity:.3;pointer-events:none':''}">›</button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="trkFormOpen=!trkFormOpen;renderPage()">
-          ${trkFormOpen?'✕ Abbrechen':'+ Erfassen'}
+        <button class="btn btn-primary btn-sm" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:trkDate};trkFormOpen=true;renderPage()">
+          + Erfassen
         </button>
       </div>
 
-      ${trkFormOpen?`
-      <div style="background:var(--cream);border-radius:14px;padding:16px;border:1px solid var(--border)">
-        <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">Neue Mahlzeit</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-          ${emojis.map(e=>`<span onclick="trkForm.emoji='${e}';document.getElementById('trkEmoji').value='${e}';this.parentNode.querySelectorAll('span').forEach(s=>s.style.background='transparent');this.style.background='var(--peach)'" 
-            style="cursor:pointer;font-size:1.3rem;padding:4px 6px;border-radius:8px;background:${trkForm.emoji===e?'var(--peach)':'transparent'}">${e}</span>`).join('')}
-        </div>
-        <input type="hidden" id="trkEmoji" value="${trkForm.emoji}">
-        <div class="field"><label class="label">Name *</label>
-          <input class="input" id="trkName" value="${esc(trkForm.name)}" placeholder="Mahlzeit benennen..." oninput="trkForm.name=this.value"></div>
-        <div class="g2">
-          <div class="field"><label class="label">Typ</label>
-            <select class="select" onchange="trkForm.typ=this.value">${types.map(t=>`<option${trkForm.typ===t?' selected':''}>${t}</option>`).join('')}</select></div>
-          <div class="field"><label class="label">Bewertet am</label>
-            <input type="date" class="input" value="${trkForm.datum}" onchange="trkForm.datum=this.value"></div>
-        </div>
-        <div class="g2">
-          <div class="field"><label class="label">FODMAP</label>
-            <select class="select" onchange="trkForm.fodmap=this.value">
-              <option value="g"${trkForm.fodmap==='g'?' selected':''}>✅ Low-FODMAP</option>
-              <option value="y"${trkForm.fodmap==='y'?' selected':''}>⚠️ Gemischt</option>
-              <option value="r"${trkForm.fodmap==='r'?' selected':''}>❌ High-FODMAP</option>
-            </select></div>
-          <div class="field"><label class="label">Reflux</label>
-            <select class="select" onchange="trkForm.reflux=this.value">
-              <option value="g"${trkForm.reflux==='g'?' selected':''}>✅ Reflux-OK</option>
-              <option value="y"${trkForm.reflux==='y'?' selected':''}>⚠️ In Maßen</option>
-              <option value="r"${trkForm.reflux==='r'?' selected':''}>❌ Trigger</option>
-            </select></div>
-        </div>
-        <div class="field"><label class="label">Wie hat es dir bekommen?</label>
-          <div style="display:flex;gap:8px">${[1,2,3,4,5].map(s=>`
-            <span onclick="trkForm.bew=${s};renderPage()" style="font-size:1.5rem;cursor:pointer">${s<=trkForm.bew?'⭐':'☆'}</span>`).join('')}
-          </div></div>
-        <div class="field"><label class="label">Notiz</label>
-          <textarea class="textarea" rows="2" placeholder="Wie hast du dich danach gefühlt?" oninput="trkForm.notiz=this.value">${esc(trkForm.notiz)}</textarea></div>
-        <div class="flex" style="gap:8px">
-          <button class="btn btn-primary" onclick="saveMahlzeit()">✅ Speichern</button>
-          <button class="btn btn-secondary" onclick="trkFormOpen=false;renderPage()">Abbrechen</button>
-        </div>
-      </div>`:''}
+      ${trkFormOpen ? renderTrkForm(emojis, types) : ''}
     </div>
 
-    ${meals.length===0&&!trkFormOpen?`<div class="card ta-c"><p class="c-lt" style="padding:20px 0">Noch keine Mahlzeiten für diesen Tag 🍽️</p></div>`:''}
+    ${meals.length===0&&!trkFormOpen?`
+    <div class="card ta-c" style="padding:28px 16px">
+      <div style="font-size:2.5rem;margin-bottom:8px">🍽️</div>
+      <p class="c-lt fs-sm">Noch keine Mahlzeiten für diesen Tag.</p>
+      <button class="btn btn-primary btn-sm mt12" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:trkDate};trkFormOpen=true;renderPage()">Jetzt eintragen</button>
+    </div>`:''}
 
     ${types.map(typ=>{
       const g=meals.filter(m=>m.typ===typ);
-      if(!g.length)return '';
+      if(!g.length) return '';
       return `
         <div class="sect-hd">${typ}</div>
         ${g.map(m=>`
-        <div class="card" style="padding:14px;margin-bottom:8px">
+        <div class="card" style="padding:12px 14px;margin-bottom:8px">
           <div class="flex-sb">
-            <div class="flex-c">
-              <span style="font-size:1.4rem">${m.emoji||'🍽️'}</span>
-              <div>
-                <div class="fw-7 fs-md">${esc(m.name)}</div>
-                ${m.notiz?`<div class="fs-xs c-lt mt4">${esc(m.notiz)}</div>`:''}
+            <div class="flex-c" style="gap:10px;flex:1;min-width:0">
+              <span style="font-size:1.4rem;flex-shrink:0">${m.emoji||'🍽️'}</span>
+              <div style="min-width:0">
+                <div class="fw-7 fs-md" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div>
+                ${m.notiz?`<div class="fs-xs c-lt mt4" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.notiz)}</div>`:''}
               </div>
             </div>
-            <button onclick="deleteMahlzeit(${m.id})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-lt)">🗑️</button>
+            <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+              <button onclick="editMahlzeit(${m.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:.8rem" title="Bearbeiten">✏️</button>
+              <button onclick="deleteMahlzeit(${m.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:.8rem" title="Löschen">🗑️</button>
+            </div>
           </div>
           <div class="flex-c mt8" style="flex-wrap:wrap;gap:5px">
-            <span class="tag ${tagCls(m.fodmap)}" style="font-size:.7rem">FODMAP</span>
-            <span class="tag ${tagCls(m.reflux)}" style="font-size:.7rem">Reflux</span>
-            ${m.bew?`<span style="font-size:.85rem">${'⭐'.repeat(m.bew)}</span>`:''}
-            <span class="fs-xs c-lt">${m.datum}</span>
+            <span class="tag ${tagCls(m.fodmap)}" style="font-size:.68rem">FODMAP</span>
+            <span class="tag ${tagCls(m.reflux)}" style="font-size:.68rem">Reflux</span>
+            ${m.bew?`<span style="font-size:.82rem">${'⭐'.repeat(m.bew)}</span>`:''}
           </div>
         </div>`).join('')}`;
     }).join('')}
   `;
 }
 
+function renderTrkForm(emojis, types) {
+  const isEdit = trkEditId !== null;
+  return `
+    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid ${isEdit?'var(--rose)':'var(--border)'}">
+      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">
+        ${isEdit ? '✏️ Mahlzeit bearbeiten' : '🍽️ Neue Mahlzeit'}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
+        ${emojis.map(e=>`<span
+          onclick="trkForm.emoji='${e}';document.getElementById('trkEmoji').value='${e}';document.querySelectorAll('.emoji-btn').forEach(s=>s.style.background='transparent');this.style.background='var(--peach)'"
+          class="emoji-btn"
+          style="cursor:pointer;font-size:1.2rem;padding:4px 5px;border-radius:8px;background:${trkForm.emoji===e?'var(--peach)':'transparent'}">${e}</span>`).join('')}
+      </div>
+      <input type="hidden" id="trkEmoji" value="${trkForm.emoji}">
+      <div class="field">
+        <label class="label">Name *</label>
+        <input class="input" id="trkName" value="${esc(trkForm.name)}" placeholder="z.B. Haferbrei mit Blaubeeren" oninput="trkForm.name=this.value">
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label class="label">Mahlzeit-Typ</label>
+          <select class="select" onchange="trkForm.typ=this.value">
+            ${types.map(t=>`<option${trkForm.typ===t?' selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Datum</label>
+          <input type="date" class="input" value="${trkForm.datum}" onchange="trkForm.datum=this.value">
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label class="label">FODMAP</label>
+          <select class="select" onchange="trkForm.fodmap=this.value">
+            <option value="g"${trkForm.fodmap==='g'?' selected':''}>✅ Low-FODMAP</option>
+            <option value="y"${trkForm.fodmap==='y'?' selected':''}>⚠️ Gemischt</option>
+            <option value="r"${trkForm.fodmap==='r'?' selected':''}>❌ High-FODMAP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Reflux</label>
+          <select class="select" onchange="trkForm.reflux=this.value">
+            <option value="g"${trkForm.reflux==='g'?' selected':''}>✅ Reflux-OK</option>
+            <option value="y"${trkForm.reflux==='y'?' selected':''}>⚠️ In Maßen</option>
+            <option value="r"${trkForm.reflux==='r'?' selected':''}>❌ Trigger</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Wie hat es dir bekommen?</label>
+        <div style="display:flex;gap:8px">
+          ${[1,2,3,4,5].map(s=>`
+            <span onclick="trkForm.bew=${s};renderPage()" style="font-size:1.5rem;cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${s<=trkForm.bew?'⭐':'☆'}</span>`).join('')}
+          ${trkForm.bew?`<span class="fs-xs c-lt" style="align-self:center">(tippen zum Ändern)</span>`:''}
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Notiz (optional)</label>
+        <textarea class="textarea" rows="2" placeholder="Wie hast du dich danach gefühlt? Beschwerden?" oninput="trkForm.notiz=this.value">${esc(trkForm.notiz)}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveMahlzeit()">
+          ${isEdit ? '💾 Änderungen speichern' : '✅ Speichern'}
+        </button>
+        <button class="btn btn-secondary" onclick="trkFormOpen=false;trkEditId=null;renderPage()">Abbrechen</button>
+        ${isEdit ? `<button class="btn btn-secondary" style="color:var(--red);border-color:var(--red)" onclick="if(confirm('Mahlzeit löschen?')){deleteMahlzeit(${trkEditId})}">🗑️ Löschen</button>` : ''}
+      </div>
+    </div>`;
+}
+
+function editMahlzeit(id) {
+  const m = state.mahlzeiten.find(x => x.id === id);
+  if(!m) return;
+  trkEditId = id;
+  trkForm = { name:m.name, typ:m.typ||'Frühstück', fodmap:m.fodmap||'g', reflux:m.reflux||'g',
+              emoji:m.emoji||'🍽️', notiz:m.notiz||'', bew:m.bew||0, datum:m.datum||trkDate };
+  trkFormOpen = true;
+  trkDate = m.datum || trkDate; // zur richtigen Tag springen
+  renderPage();
+  // Scroll zum Formular
+  setTimeout(()=>document.querySelector('.main')?.scrollTo({top:0,behavior:'smooth'}),100);
+}
+
 function saveMahlzeit() {
-  const name=document.getElementById('trkName')?.value||trkForm.name;
-  if(!name.trim()){alert('Bitte Name eingeben');return;}
-  const m={...trkForm,name,emoji:document.getElementById('trkEmoji')?.value||trkForm.emoji,id:Date.now()};
-  save('mahlzeiten',[...state.mahlzeiten,m]);
-  trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today()};
-  trkFormOpen=false;
+  const name = document.getElementById('trkName')?.value || trkForm.name;
+  if(!name.trim()) { alert('Bitte einen Namen eingeben'); return; }
+  const emoji = document.getElementById('trkEmoji')?.value || trkForm.emoji;
+  const updated = { ...trkForm, name, emoji };
+
+  if(trkEditId !== null) {
+    // Bearbeiten: bestehenden Eintrag ersetzen
+    save('mahlzeiten', state.mahlzeiten.map(m => m.id === trkEditId ? { ...m, ...updated } : m));
+    trkEditId = null;
+  } else {
+    // Neu anlegen
+    save('mahlzeiten', [...state.mahlzeiten, { ...updated, id: Date.now() }]);
+  }
+  trkDate = updated.datum; // zeige den Tag der Mahlzeit
+  trkForm = { name:'', typ:'Frühstück', fodmap:'g', reflux:'g', emoji:'🍽️', notiz:'', bew:0, datum:trkDate };
+  trkFormOpen = false;
   renderPage();
 }
 
 function deleteMahlzeit(id) {
-  save('mahlzeiten',state.mahlzeiten.filter(m=>m.id!==id));
+  save('mahlzeiten', state.mahlzeiten.filter(m => m.id !== id));
+  trkFormOpen = false;
+  trkEditId = null;
   renderPage();
 }
 
@@ -2024,30 +2109,15 @@ function renderKochbuch() {
     </div>`:''}
 
     <div class="card" style="padding:14px">
-      <input class="input mb8" placeholder="🔍 Rezept oder Tag suchen..." oninput="kbSuche=this.value;document.getElementById('kb-grid').innerHTML=getKbGrid()" value="${esc(kbSuche)}">
+      <input class="input mb8" placeholder="🔍 Rezept oder Tag suchen..." oninput="kbSuche=this.value;refreshKbGrid()" value="${esc(kbSuche)}">
       <div class="flex" style="gap:8px">
-        <select class="select" onchange="kbKat=this.value;document.getElementById('kb-grid').innerHTML=getKbGrid()">
+        <select class="select" onchange="kbKat=this.value;refreshKbGrid()">
           ${kats.map(k=>`<option${kbKat===k?' selected':''}>${k}</option>`).join('')}
         </select>
         <button class="btn btn-primary btn-sm" onclick="kbNeuOpen=!kbNeuOpen;renderPage()" style="white-space:nowrap">+ Eigenes</button>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
-        <span class="fs-xs fw-7 c-lt" style="align-self:center">Schnellfilter:</span>
-        <button class="btn btn-xs ${kbFilter==='alle'?'btn-primary':'btn-secondary'}" onclick="kbFilter='alle';document.getElementById('kb-grid').innerHTML=getKbGrid()">Alle</button>
-        <button class="btn btn-xs ${kbFilter==='ideal'?'btn-primary':'btn-secondary'}" onclick="kbFilter='ideal';document.getElementById('kb-grid').innerHTML=getKbGrid()">✨ Ideal jetzt</button>
-        <button class="btn btn-xs ${kbFilter==='vertraeglich'?'btn-primary':'btn-secondary'}" onclick="kbFilter='vertraeglich';document.getElementById('kb-grid').innerHTML=getKbGrid()">😊 Verträglich</button>
-        <button class="btn btn-xs ${kbFilter==='schonkost'?'btn-primary':'btn-secondary'}" onclick="kbFilter='schonkost';document.getElementById('kb-grid').innerHTML=getKbGrid()">🌿 Schonkost</button>
-      </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-        <span class="fs-xs fw-7 c-lt" style="align-self:center">Zyklus:</span>
-        ${[
-          {id:'alle',    label:'🗓️ Alle'},
-          {id:'menstruation', label:'🌕 Periode'},
-          {id:'follikel',     label:'🌱 Follikel'},
-          {id:'ovulation',    label:'🌸 Eisprung'},
-          {id:'luteal',       label:'🍂 Luteal'},
-        ].map(p=>`<button class="btn btn-xs ${kbZyklus===p.id?'btn-primary':'btn-secondary'}"
-          onclick="kbZyklus='${p.id}';document.getElementById('kb-grid').innerHTML=getKbGrid()">${p.label}</button>`).join('')}
+      <div id="kb-filters" style="margin-top:8px">
+        ${renderKbFilters()}
       </div>
     </div>
 
@@ -2071,6 +2141,42 @@ function renderKochbuch() {
 
     <div id="kb-grid">${getKbGrid()}</div>
   `;
+}
+
+function renderKbFilters() {
+  const schnell = [
+    {id:'alle',        label:'Alle'},
+    {id:'ideal',       label:'✨ Ideal jetzt'},
+    {id:'vertraeglich',label:'😊 Verträglich'},
+    {id:'schonkost',   label:'🌿 Schonkost'},
+  ];
+  const zyklus = [
+    {id:'alle',         label:'🗓️ Alle'},
+    {id:'menstruation', label:'🌕 Periode'},
+    {id:'follikel',     label:'🌱 Follikel'},
+    {id:'ovulation',    label:'🌸 Eisprung'},
+    {id:'luteal',       label:'🍂 Luteal'},
+  ];
+  return `
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+      <span class="fs-xs fw-7 c-lt" style="align-self:center">Filter:</span>
+      ${schnell.map(f=>`<button class="btn btn-xs ${kbFilter===f.id?'btn-primary':'btn-secondary'}"
+        onclick="kbFilter='${f.id}';refreshKbGrid()">${f.label}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <span class="fs-xs fw-7 c-lt" style="align-self:center">Zyklus:</span>
+      ${zyklus.map(p=>`<button class="btn btn-xs ${kbZyklus===p.id?'btn-primary':'btn-secondary'}"
+        onclick="kbZyklus='${p.id}';refreshKbGrid()">${p.label}</button>`).join('')}
+    </div>`;
+}
+
+function refreshKbGrid() {
+  // Grid aktualisieren
+  const grid = document.getElementById('kb-grid');
+  if(grid) grid.innerHTML = getKbGrid();
+  // Filter-Buttons neu rendern damit aktiver Button korrekt hervorgehoben wird
+  const filters = document.getElementById('kb-filters');
+  if(filters) filters.innerHTML = renderKbFilters();
 }
 
 function getKbGrid() {
@@ -2099,29 +2205,51 @@ function getKbGrid() {
 
   if(!filtered.length) return '<p class="c-lt ta-c" style="padding:28px 0">Keine Rezepte gefunden 🔍<br><span class="fs-xs">Filter anpassen oder Suche leeren</span></p>';
 
-  // Wenn Zyklusfilter aktiv oder kbFilter !== 'alle': alles flach anzeigen (kein "Ideal"-Grouping)
-  const useGrouping = !kbSuche && kbFilter==='alle' && kbZyklus==='alle';
+  let html = '';
 
-  if(useGrouping) {
-    const top  = filtered.filter(r=>(r._score?.score||0) >= 90);
-    const rest = filtered.filter(r=>(r._score?.score||0) < 90);
-    let html = '';
-    if(top.length) {
-      html += `<div class="sect-hd" style="display:flex;align-items:center;gap:6px">✨ Ideal für jetzt <span style="font-size:.63rem;color:var(--text-lt);font-weight:400">(Zustand + Zyklus + Verträglichkeit)</span></div>`;
-      html += top.slice(0,6).map(r=>rezeptCard(r)).join('');
-      if(rest.length) html += `<div class="sect-hd mt12">Alle Rezepte (${rest.length})</div>`;
-    }
-    html += rest.map(r=>rezeptCard(r)).join('');
+  if(kbFilter === 'ideal') {
+    // Nur top-Rezepte, klar als solche gekennzeichnet
+    html += `<div class="sect-hd" style="display:flex;align-items:center;gap:6px">✨ Ideal für jetzt · ${filtered.length} Rezepte <span style="font-size:.63rem;color:var(--text-lt);font-weight:400">(Zustand + Zyklus + Verträglichkeit)</span></div>`;
+    html += filtered.map(r=>rezeptCard(r)).join('');
     return html;
   }
 
-  // Flache Anzeige mit Anzahl
-  const label = kbZyklus !== 'alle'
-    ? ({menstruation:'🌕 Periode',follikel:'🌱 Follikelphase',ovulation:'🌸 Eisprung',luteal:'🍂 Lutealphase'})[kbZyklus]
-    : kbFilter !== 'alle' ? ({ideal:'✨ Ideal jetzt',vertraeglich:'😊 Verträglich',schonkost:'🌿 Schonkost'})[kbFilter] : '';
-  let html = '';
-  if(label) html += `<div class="sect-hd">${label} · ${filtered.length} Rezepte</div>`;
-  html += filtered.map(r=>rezeptCard(r)).join('');
+  if(kbZyklus !== 'alle') {
+    // Zyklusfilter aktiv: flach mit Phasen-Label
+    const phaseName = ({menstruation:'🌕 Periode',follikel:'🌱 Follikelphase',ovulation:'🌸 Eisprung',luteal:'🍂 Lutealphase'})[kbZyklus];
+    html += `<div class="sect-hd">${phaseName} · ${filtered.length} Rezepte</div>`;
+    html += filtered.map(r=>rezeptCard(r)).join('');
+    return html;
+  }
+
+  if(kbFilter !== 'alle') {
+    // Anderer Schnellfilter: flach mit Label
+    const filterName = ({vertraeglich:'😊 Verträglich',schonkost:'🌿 Schonkost'})[kbFilter] || '';
+    html += `<div class="sect-hd">${filterName} · ${filtered.length} Rezepte</div>`;
+    html += filtered.map(r=>rezeptCard(r)).join('');
+    return html;
+  }
+
+  // "Alle" — zeige alle Rezepte alphabetisch / nach Kategorie, KEIN automatisches Ideal-Grouping
+  // Damit ist "Alle" wirklich alle, ohne versteckte Sortierung
+  const byKat = {};
+  filtered.forEach(r => {
+    const k = r.kat || r.kategorie || 'Sonstiges';
+    if(!byKat[k]) byKat[k] = [];
+    byKat[k].push(r);
+  });
+  const katOrder = ['Frühstück','Mittagessen','Abendessen','Snack'];
+  katOrder.forEach(k => {
+    if(!byKat[k]?.length) return;
+    html += `<div class="sect-hd">${k} (${byKat[k].length})</div>`;
+    html += byKat[k].map(r=>rezeptCard(r)).join('');
+  });
+  // Unbekannte Kategorien
+  Object.entries(byKat).forEach(([k,rs]) => {
+    if(katOrder.includes(k)) return;
+    html += `<div class="sect-hd">${k} (${rs.length})</div>`;
+    html += rs.map(r=>rezeptCard(r)).join('');
+  });
   return html;
 }
 
@@ -2270,19 +2398,15 @@ function renderWochenplan() {
     ${wpShowShop?`
     <div class="card mt12">
       <div class="flex-sb mb12">
-        <div class="card-title" style="margin-bottom:0">🛒 Einkaufsliste (${state.einkaufsliste.filter(i=>!i.done).length} offen)</div>
+        <div class="card-title" style="margin-bottom:0">🛒 Einkaufsliste (${state.einkaufsliste.filter(i=>!i.done).length} von ${state.einkaufsliste.length})</div>
         <div class="flex" style="gap:6px">
-          <button class="btn btn-secondary btn-xs" onclick="save('einkaufsliste',state.einkaufsliste.filter(i=>!i.done));renderPage()">✓ erledigte weg</button>
+          <button class="btn btn-secondary btn-xs" onclick="save('einkaufsliste',state.einkaufsliste.filter(i=>!i.done));renderPage()">✓ Erledigte weg</button>
           <button class="btn btn-secondary btn-xs" onclick="wpShowShop=false;renderPage()">✕</button>
         </div>
       </div>
-      ${state.einkaufsliste.length===0?`<p class="c-lt fs-sm">Liste ist leer</p>`:`
+      ${state.einkaufsliste.length===0?`<p class="c-lt fs-sm">Liste ist leer – erst Wochenplan befüllen, dann Einkaufsliste erstellen.</p>`:`
       <div>
-        ${state.einkaufsliste.map(item=>`
-        <div class="shop-item${item.done?' done':''}">
-          <input type="checkbox" class="shop-check" ${item.done?'checked':''} onchange="toggleShopItem('${item.id}')">
-          <span class="fs-sm">${esc(item.text)}</span>
-        </div>`).join('')}
+        ${renderShopByKategorie(state.einkaufsliste)}
       </div>`}
     </div>`:''}
   `;
@@ -2351,10 +2475,394 @@ function generatePlan() {
 }
 
 function generateShoppingList() {
-  const alle=[];
-  Object.values(state.wochenplan).forEach(r=>{if(r?.zutaten)alle.push(...r.zutaten);});
-  const einzig=[...new Set(alle)];
-  save('einkaufsliste',einzig.map(z=>({text:z,done:false,id:Date.now()+Math.random()})));
+  const alle = [];
+  Object.values(state.wochenplan).forEach(r => { if(r?.zutaten) alle.push(...r.zutaten); });
+
+  // ── Zutaten intelligent zusammenführen ─────────────────────────
+  // Schritt 1: Jede Zutat in Menge + Einheit + Name zerlegen
+  const parsed = alle.map(z => parseZutat(z));
+
+  // Schritt 2: Nach normalisiertem Zutat-Namen gruppieren
+  const grouped = {};
+  parsed.forEach(p => {
+    const key = p.name;
+    if(!grouped[key]) {
+      grouped[key] = { name: p.name, amounts: [], originals: [] };
+    }
+    if(p.amount) grouped[key].amounts.push({ amount: p.amount, unit: p.unit });
+    grouped[key].originals.push(p.original);
+  });
+
+  // Schritt 3: Pro Gruppe eine zusammengefasste Zeile erzeugen
+  const merged = Object.values(grouped).map(g => {
+    if(g.amounts.length === 0) return g.name;
+
+    // Gleiche Einheiten addieren
+    const unitTotals = {};
+    g.amounts.forEach(a => {
+      const u = a.unit || '';
+      unitTotals[u] = (unitTotals[u] || 0) + a.amount;
+    });
+
+    const parts = Object.entries(unitTotals).map(([unit, total]) => {
+      // Schöne Zahlenformatierung (1.5 → 1½, 0.25 → ¼ etc.)
+      const pretty = formatAmount(total);
+      return unit ? `${pretty} ${unit}` : pretty;
+    });
+
+    return `${parts.join(' + ')} ${g.name}`;
+  });
+
+  // Sortieren: nach Kategorie / alphabetisch
+  const sorted = merged.sort((a, b) => {
+    const catA = getZutatKategorie(a);
+    const catB = getZutatKategorie(b);
+    if(catA !== catB) return catA.localeCompare(catB);
+    return a.localeCompare(b);
+  });
+
+  save('einkaufsliste', sorted.map(z => ({ text: z, done: false, id: Date.now() + Math.random() })));
+}
+
+function generateShoppingList() {
+  const alle = [];
+  Object.values(state.wochenplan).forEach(r => { if(r?.zutaten) alle.push(...r.zutaten); });
+
+  // Jede Zutatenzeile aufsplitten (manche haben "Salz, Pfeffer" in einer Zeile)
+  const expanded = [];
+  alle.forEach(z => {
+    // Trenne an Komma/Semikolon nur wenn danach kein Leerzeichen+Klammer kommt
+    // "Salz, Pfeffer" → ["Salz","Pfeffer"], aber "Quark (laktosefrei), 100g" bleibt
+    const parts = z.split(/,(?![^(]*\))/);
+    parts.forEach(p => { if(p.trim()) expanded.push(p.trim()); });
+  });
+
+  // Alle Zutaten parsen
+  const parsed = expanded.map(z => parseZutatSmart(z));
+
+  // Nach kanonischem Namen gruppieren
+  const grouped = {};
+  parsed.forEach(p => {
+    const key = p.canon;
+    if(!grouped[key]) grouped[key] = { label: p.label, canon: p.canon, amounts: [] };
+    if(p.amount !== null) grouped[key].amounts.push({ amount: p.amount, unit: p.unit });
+  });
+
+  // Pro Gruppe Ausgabe-Text erzeugen
+  const merged = Object.values(grouped).map(g => {
+    if(g.amounts.length === 0) return g.label;
+    const unitTotals = {};
+    g.amounts.forEach(a => {
+      const u = a.unit || '';
+      unitTotals[u] = (unitTotals[u] || 0) + a.amount;
+    });
+    const parts = Object.entries(unitTotals).map(([u, tot]) =>
+      u ? `${formatAmount(tot)} ${u}` : formatAmount(tot)
+    );
+    return `${parts.join(' + ')} ${g.label}`;
+  });
+
+  // Nach Supermarkt-Reihenfolge sortieren
+  merged.sort((a, b) => {
+    const oa = getSupermarktOrder(a);
+    const ob = getSupermarktOrder(b);
+    if(oa !== ob) return oa - ob;
+    return a.localeCompare(b, 'de');
+  });
+
+  save('einkaufsliste', merged.map(z => ({ text: z, done: false, id: Date.now() + Math.random() })));
+}
+
+// ── Kanonisches Zutaten-Wörterbuch ──────────────────────────────────
+// Mappt alle Schreibweisen auf: { canon: "schlüssel", label: "Anzeigename" }
+const ZUTATEN_DICT = (()=>{
+  const entries = [
+    // Gemüse
+    ['möhr','möhren','möhre','karotte','karotten','möhren (gewürfelt)','möhren frisch','frische möhren','2 möhren','möhren in streifen'],
+    ['zucchini','1 zucchini','zucchini in scheiben','zucchini in würfel'],
+    ['spinat','frischer spinat','baby spinat','100g spinat','blattspinat'],
+    ['paprika','paprika (rot)','rote paprika','1 paprika','1 rote paprika','paprika rot','paprika grün','paprika gelb'],
+    ['gurke','1 gurke','große gurke','gurke in scheiben'],
+    ['kartoffeln','kartoffel','400g kartoffeln','300g kartoffeln'],
+    ['süßkartoffel','süßkartoffeln','1 süßkartoffel'],
+    ['kürbis','hokkaido','butternut','kürbis (butternut)','300g kürbis','400g kürbis'],
+    ['brokkoli','brokkoli röschen'],
+    ['blumenkohl'],
+    ['tomaten','kirschtomaten','cherry-tomaten'],
+    ['aubergine','1 aubergine'],
+    ['fenchel'],
+    ['kohlrabi','1 kohlrabi'],
+    ['sellerie','staudensellerie'],
+    ['pak choi','pak-choi','1 pak choi'],
+    ['frühlingszwiebeln','frühlingszwiebel','grüne frühlingszwiebeln','frühlingszwiebeln (nur grün)'],
+    ['mais','mais (konserve)','mais (dose)'],
+    ['erbsen','tiefkühlerbsen'],
+    ['grüne bohnen','bohnen'],
+    ['ingwer','frischer ingwer','ingwer frisch','2cm ingwer','3cm ingwer','ingwer (frisch)','stück ingwer','frischer ingwer (1cm)','frischer ingwer (2cm)','frischer ingwer (3cm)','ingwer 1cm','ingwer 2cm','ingwer frisch (1cm)'],
+    ['avocado'],
+    ['oliven'],
+    ['pilze','champignons','austernpilze'],
+    // Obst
+    ['banane','bananen','1 banane','½ banane','unreife banane','1 unreife banane'],
+    ['erdbeeren','50g erdbeeren','100g erdbeeren'],
+    ['blaubeeren','40g blaubeeren','50g blaubeeren'],
+    ['himbeeren'],
+    ['kiwi'],
+    ['zitrone','zitronen','zitronensaft','zitronenschale'],
+    ['limette','limettensaft'],
+    // Getreide & Brot
+    ['reis','weißer reis','basmatireis','langkornreis','150g reis','150g basmatireis','200g reis'],
+    ['reisnudeln','100g reisnudeln','150g reisnudeln'],
+    ['quinoa','150g quinoa','100g quinoa'],
+    ['hirse','80g hirse','150g hirse'],
+    ['polenta','150g polenta'],
+    ['haferflocken','glutenfreie haferflocken','80g haferflocken','60g haferflocken'],
+    ['buchweizen','80g buchweizen'],
+    ['glutenfreies brot'],
+    ['reiswaffeln','maiswaffeln'],
+    ['popcorn'],
+    ['panko','panko (glutenfrei)','3 el panko'],
+    // Protein
+    ['hähnchenbrust','hähnchen','hähnchenfilet','200g hähnchenbrust','200g hähnchen','150g hähnchen','hähnchen (gegrillt)'],
+    ['putenbrust','pute','200g putenbrust','300g putenhackfleisch'],
+    ['lachs','lachsfilets','2 lachsfilets','150g lachs'],
+    ['forelle'],
+    ['kabeljau','seelachs','tilapia','200g kabeljau','200g seelachs'],
+    ['thunfisch','1 dose thunfisch','thunfisch (dose)','thunfisch (in wasser)'],
+    ['garnelen','200g garnelen','150g garnelen'],
+    ['eier','ei','4 eier','3 eier','2 eier','1 ei'],
+    ['tofu','200g tofu','fester tofu'],
+    ['tempeh','200g tempeh'],
+    ['rindfleisch'],
+    ['kichererbsen','dose kichererbsen'],
+    ['linsen','rote linsen','100g linsen'],
+    // Milch & Alternativen
+    ['mandelmilch','200ml mandelmilch','250ml mandelmilch','300ml mandelmilch'],
+    ['reismilch','200ml reismilch','250ml reismilch','300ml reismilch'],
+    ['hafermilch'],
+    ['kokosmilch','dose kokosmilch','100ml kokosmilch','200ml kokosmilch'],
+    ['laktosefreie milch','laktosefreie milch (100ml)','100ml laktosefreie milch'],
+    ['laktosefreier joghurt','150g joghurt','joghurt (laktosefrei)'],
+    ['laktosefreier quark','quark (laktosefrei)','100g quark','150g quark'],
+    ['parmesan','50g parmesan','40g parmesan'],
+    ['feta','50g feta','40g feta'],
+    ['mozzarella'],
+    ['butter','butter (laktosefrei)','1 el butter','2 el butter'],
+    ['frischkäse','frischkäse (laktosefrei)','100g frischkäse'],
+    // Öle & Fette
+    ['olivenöl','1 el olivenöl','2 el olivenöl','3 el olivenöl'],
+    ['sesamöl','1 el sesamöl','2 el sesamöl'],
+    ['kokosöl','1 tl kokosöl','1 el kokosöl'],
+    // Nüsse & Samen
+    ['mandeln','10 mandeln','gehackte mandeln','5 mandeln'],
+    ['walnüsse','10 walnüsse'],
+    ['erdnussbutter','2 el erdnussbutter'],
+    ['chiasamen','1 el chiasamen','2 el chiasamen'],
+    ['leinsamen','1 el leinsamen'],
+    ['sesam','sesamkörner','1 el sesam'],
+    ['kürbiskerne','2 el kürbiskerne'],
+    ['tahini','sesampaste','2 el tahini'],
+    ['hanfsamen','2 el hanfsamen'],
+    // Gewürze (diese werden meistens nicht in Mengen angegeben)
+    ['salz','prise salz','etwas salz','salz nach geschmack','meersalz'],
+    ['pfeffer','schwarzer pfeffer','pfeffer nach geschmack'],
+    ['kurkuma','kurkuma (gemahlen)','½ tl kurkuma','1 tl kurkuma'],
+    ['zimt','½ tl zimt','1 tl zimt'],
+    ['paprikapulver','paprikapulver (mild)','paprikapulver (süß)','paprika pulver','1 tl paprikapulver'],
+    ['kreuzkümmel','1 tl kreuzkümmel'],
+    ['kümmel','1 tl kümmel'],
+    ['muskat','muskatnuss','prise muskat'],
+    ['vanille','vanilleextrakt','½ tl vanille','1 tl vanille'],
+    ['kardamom'],
+    ['lorbeerblatt'],
+    ['senf','2 el senf','dijon-senf','2 el dijon-senf'],
+    ['sojasoße','glutenfreie sojasoße','2 el sojasoße','1 el sojasoße','2 el glutenfreie sojasoße'],
+    ['reisessig','1 el reisessig','2 el reisessig'],
+    ['ahornsirup','1 tl ahornsirup','1 el ahornsirup','2 el ahornsirup'],
+    ['backpulver'],
+    // Kräuter (frisch)
+    ['frischer basilikum','basilikum','frisches basilikum'],
+    ['frische petersilie','petersilie','frischer petersilie'],
+    ['frischer dill','dill','frisches dill'],
+    ['frischer rosmarin','rosmarin'],
+    ['frischer thymian','thymian'],
+    ['frischer koriander','koriander'],
+    ['schnittlauch','frischer schnittlauch'],
+    ['zitronengras','1 stängel zitronengras'],
+    // Brühen & Flüssigkeiten
+    ['hühnerbrühe','hühner brühe','500ml hühnerbrühe','600ml hühnerbrühe','1l hühnerbrühe','brühe'],
+    ['gemüsebrühe','gemüse brühe','500ml gemüsebrühe','600ml gemüsebrühe','800ml gemüsebrühe'],
+  ];
+
+  const dict = {};
+  entries.forEach((synonyms, idx) => {
+    const label = synonyms[0]; // erste Schreibweise = Anzeigename (Grundform)
+    // Ersten Buchstaben groß
+    const displayLabel = label.charAt(0).toUpperCase() + label.slice(1);
+    synonyms.forEach(syn => {
+      dict[syn.toLowerCase().trim()] = { canon: `item_${idx}`, label: displayLabel };
+    });
+  });
+  return dict;
+})();
+
+function parseZutatSmart(str) {
+  const orig = str.trim();
+  const lower = orig.toLowerCase()
+    .replace(/\s*\(ohne.*?\)/g,'')      // "(ohne Zwiebeln)" entfernen
+    .replace(/\s*\(vorgekocht\)/g,'')
+    .replace(/\s*\(gegrillt\)/g,'')
+    .replace(/\s*\(aufgetaut\)/g,'')
+    .replace(/\s*\(abgespült\)/g,'')
+    .replace(/\s*als beilage/g,'')
+    .replace(/!$/,'')
+    .replace(/\s+/g,' ').trim();
+
+  // Füllwörter entfernen die vor Zutaten stehen
+  const stripped = lower
+    .replace(/^(frisch(e[rns]?)?\s+)/,'')
+    .replace(/^(etwas|wenig|prise|eine prise|etwas frisch(e[rns]?)?)\s+/,'')
+    .replace(/^(nach geschmack|zum servieren|zum garnieren|zum bestreuen)\s*/,'')
+    .trim();
+
+  // Direkt im Wörterbuch nachschlagen (ganzer String)
+  if(ZUTATEN_DICT[lower]) {
+    return { ...parseAmount(lower, ZUTATEN_DICT[lower]), original: orig };
+  }
+  if(ZUTATEN_DICT[stripped]) {
+    return { ...parseAmount(lower, ZUTATEN_DICT[stripped]), original: orig };
+  }
+
+  // Menge + Name trennen, dann Name im Wörterbuch suchen
+  const { amount, unit, namePart } = extractAmountUnit(lower);
+  const nameStripped = namePart
+    .replace(/^(frisch(e[rns]?)?\s+)/,'')
+    .replace(/\s*\([^)]*\)/g,'')   // alle Klammerinhalte weg
+    .trim();
+
+  if(ZUTATEN_DICT[namePart])      return { canon: ZUTATEN_DICT[namePart].canon, label: ZUTATEN_DICT[namePart].label, amount, unit, original: orig };
+  if(ZUTATEN_DICT[nameStripped])  return { canon: ZUTATEN_DICT[nameStripped].canon, label: ZUTATEN_DICT[nameStripped].label, amount, unit, original: orig };
+
+  // Partieller Match: suche ob ein Dict-Schlüssel im String vorkommt
+  const keys = Object.keys(ZUTATEN_DICT).sort((a,b)=>b.length-a.length); // längste zuerst
+  for(const k of keys) {
+    if(nameStripped.includes(k) || lower.includes(k)) {
+      return { canon: ZUTATEN_DICT[k].canon, label: ZUTATEN_DICT[k].label, amount, unit, original: orig };
+    }
+  }
+
+  // Unbekannte Zutat: sauber formatieren und behalten
+  const label = nameStripped.charAt(0).toUpperCase() + nameStripped.slice(1);
+  const canon = 'unknown_' + label.toLowerCase().replace(/\s+/g,'_');
+  return { canon, label, amount, unit, original: orig };
+}
+
+function parseAmount(str, dictEntry) {
+  const { amount, unit } = extractAmountUnit(str);
+  return { canon: dictEntry.canon, label: dictEntry.label, amount, unit };
+}
+
+function extractAmountUnit(s) {
+  const fractions = { '½':0.5, '¼':0.25, '¾':0.75, '⅓':0.333, '⅔':0.667 };
+  // Muster: Zahl + Einheit + Rest
+  const m1 = s.match(/^([½¼¾⅓⅔]|\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|el|tl|tasse|stk\.?|stück|cm|x)\.?\s+(.+)$/i);
+  if(m1) {
+    const amount = fractions[m1[1]] ?? parseFloat(m1[1].replace(',','.'));
+    return { amount, unit: m1[2].toUpperCase().replace('.',''), namePart: m1[3].trim() };
+  }
+  // Nur Zahl + Rest (keine Einheit)
+  const m2 = s.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+  if(m2) {
+    return { amount: parseFloat(m2[1].replace(',','.')), unit: null, namePart: m2[2].trim() };
+  }
+  return { amount: null, unit: null, namePart: s };
+}
+
+function formatAmount(num) {
+  if(Math.abs(num - Math.round(num)) < 0.05) return String(Math.round(num));
+  if(Math.abs(num - 0.5)  < 0.05) return '½';
+  if(Math.abs(num - 0.25) < 0.05) return '¼';
+  if(Math.abs(num - 0.75) < 0.05) return '¾';
+  if(Math.abs(num - 0.33) < 0.05) return '⅓';
+  if(Math.abs(num - 0.67) < 0.05) return '⅔';
+  return num.toFixed(1).replace('.0','');
+}
+
+// ── Supermarkt-Reihenfolge ───────────────────────────────────────────
+// Typischer Rundgang: Obst&Gemüse → Kräuter → Brot → Milch → Käse →
+// Fleisch/Fisch → Tiefkühl → Konserven → Trocken → Öle → Gewürze
+const SUPERMARKT_ABTEILUNGEN = [
+  { name:'🥦 Gemüse & Salat',   order:1,  keys:['möhren','zucchini','spinat','paprika','gurke','kartoffel','süßkartoffel','kürbis','brokkoli','blumenkohl','tomaten','aubergine','fenchel','kohlrabi','sellerie','pak choi','frühlingszwiebeln','mais','erbsen','grüne bohnen','pilze','avocado','oliven'] },
+  { name:'🍎 Obst',              order:2,  keys:['banane','erdbeeren','blaubeeren','himbeeren','kiwi','zitrone','limette'] },
+  { name:'🌿 Kräuter & Ingwer',  order:3,  keys:['ingwer','frischer basilikum','frische petersilie','frischer dill','frischer rosmarin','frischer thymian','frischer koriander','schnittlauch','zitronengras'] },
+  { name:'🍞 Brot & Getreide',   order:4,  keys:['reis','reisnudeln','quinoa','hirse','polenta','haferflocken','buchweizen','glutenfreies brot','reiswaffeln','maiswaffeln','panko'] },
+  { name:'🥛 Milch & Alternativen', order:5, keys:['mandelmilch','reismilch','hafermilch','kokosmilch','laktosefreie milch'] },
+  { name:'🧀 Käse, Joghurt & Eier', order:6, keys:['laktosefreier joghurt','laktosefreier quark','parmesan','feta','mozzarella','butter','frischkäse','eier'] },
+  { name:'🍗 Fleisch & Fisch',   order:7,  keys:['hähnchenbrust','putenbrust','lachs','forelle','kabeljau','thunfisch','garnelen','rindfleisch'] },
+  { name:'🫘 Hülsenfrüchte & Tofu', order:8, keys:['tofu','tempeh','kichererbsen','linsen'] },
+  { name:'🥣 Nüsse & Samen',     order:9,  keys:['mandeln','walnüsse','erdnussbutter','chiasamen','leinsamen','sesam','kürbiskerne','tahini','hanfsamen'] },
+  { name:'🫙 Konserven & Saucen', order:10, keys:['sojasoße','reisessig','senf'] },
+  { name:'🍲 Brühen',            order:11, keys:['hühnerbrühe','gemüsebrühe'] },
+  { name:'🫒 Öle',               order:12, keys:['olivenöl','sesamöl','kokosöl'] },
+  { name:'🧂 Gewürze & Süßes',   order:13, keys:['salz','pfeffer','kurkuma','zimt','paprikapulver','kreuzkümmel','kümmel','muskat','vanille','kardamom','lorbeerblatt','ahornsirup','backpulver'] },
+];
+
+function getSupermarktOrder(text) {
+  const lower = text.toLowerCase();
+  for(const abt of SUPERMARKT_ABTEILUNGEN) {
+    if(abt.keys.some(k => lower.includes(k))) return abt.order;
+  }
+  return 99; // Sonstiges ans Ende
+}
+
+function getAbteilungsName(text) {
+  const lower = text.toLowerCase();
+  for(const abt of SUPERMARKT_ABTEILUNGEN) {
+    if(abt.keys.some(k => lower.includes(k))) return abt.name;
+  }
+  return '🛒 Sonstiges';
+}
+
+// Legacy-Kompatibilität
+function getZutatKategorie(zutat) { return getAbteilungsName(zutat); }
+
+function renderShopByKategorie(items) {
+  // Gruppiere nach Supermarkt-Abteilung (nutzt SUPERMARKT_ABTEILUNGEN aus generateShoppingList)
+  const groups = {};
+
+  items.forEach(item => {
+    const abt = getAbteilungsName(item.text);
+    if(!groups[abt]) groups[abt] = [];
+    groups[abt].push(item);
+  });
+
+  // Sortiere Abteilungen nach Supermarkt-Reihenfolge
+  const sortedAbteilungen = Object.keys(groups).sort((a, b) => {
+    const oa = SUPERMARKT_ABTEILUNGEN.find(x=>x.name===a)?.order ?? 99;
+    const ob = SUPERMARKT_ABTEILUNGEN.find(x=>x.name===b)?.order ?? 99;
+    return oa - ob;
+  });
+
+  let html = '';
+  sortedAbteilungen.forEach(abt => {
+    const gruppeItems = groups[abt];
+    if(!gruppeItems?.length) return;
+    const offen = gruppeItems.filter(i=>!i.done).length;
+    html += `
+      <div style="margin-bottom:14px">
+        <div style="font-size:.7rem;font-weight:800;color:var(--warm-lt);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+          <span>${abt}</span>
+          ${offen===0?'<span style="color:var(--sage);font-size:.68rem;font-weight:700">✓ alles da</span>':'<span style="color:var(--text-lt);font-size:.65rem;font-weight:400">'+offen+' offen</span>'}
+        </div>
+        ${gruppeItems.map(item=>`
+        <div class="shop-item${item.done?' done':''}">
+          <input type="checkbox" class="shop-check" ${item.done?'checked':''} onchange="toggleShopItem('${item.id}')">
+          <span class="fs-sm">${esc(item.text)}</span>
+        </div>`).join('')}
+      </div>`;
+  });
+
+  return html || '<p class="c-lt fs-sm">Keine Einträge</p>';
 }
 
 function toggleShopItem(id) {

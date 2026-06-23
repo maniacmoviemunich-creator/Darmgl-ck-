@@ -485,7 +485,10 @@ input[type=checkbox]{
       <span class="nav-icon">🥗</span>Essen
     </button>
     <button class="nav-btn" data-page="tracking" onclick="navigate('tracking')">
-      <span class="nav-icon">📝</span>Tracking
+      <span class="nav-icon">📝</span>Essen
+    </button>
+    <button class="nav-btn" data-page="symptome" onclick="navigate('symptome')">
+      <span class="nav-icon">🩺</span>Symptome
     </button>
     <button class="nav-btn" data-page="kochbuch" onclick="navigate('kochbuch')">
       <span class="nav-icon">📖</span>Rezepte
@@ -627,6 +630,8 @@ const APP_VERSION = '1.6';
   state.letzterCheck = S.get('dg_letztercheck', '');
   state.toleranz     = S.get('dg_toleranz', {});
   state.lesezeichen  = S.get('dg_lesezeichen', []);
+  state.stuhlLogs    = S.get('dg_stuhl', []);
+  state.symptomZeit  = S.get('dg_symptomzeit', []);
 
   // App starten
   init();
@@ -637,6 +642,8 @@ let state = {
   page: 'dashboard',
   mahlzeiten:    S.get('dg_mahlzeiten',[]),
   symptomLogs:   S.get('dg_symptome',[]),
+  stuhlLogs:     S.get('dg_stuhl',[]),
+  symptomZeit:   S.get('dg_symptomzeit',[]),
   wochenplan:    S.get('dg_wochenplan',{}),
   einkaufsliste: S.get('dg_einkauf',[]),
   eigeneRezepte: S.get('dg_eigenerezepte',[]),
@@ -1406,6 +1413,18 @@ const CYCLE_PHASES = [
 
 const SYMPTOME = ["Blähungen","Bauchkrämpfe","Durchfall","Verstopfung","Sodbrennen","Reflux/Aufstoßen","Übelkeit","Völlegefühl","Müdigkeit","Kopfschmerzen","Heiserkeit","Räuspern","Bauchschmerzen","Stimmungsschwankungen","Schlafprobleme","Appetitlosigkeit"];
 
+const BRISTOL = [
+  { typ:1, emoji:"🪨", label:"Typ 1 – Einzelne harte Klümpchen", desc:"Stark verstopft. Sehr langsame Darmpassage.", farbe:"#D97474" },
+  { typ:2, emoji:"🍇", label:"Typ 2 – Klumpig wurstförmig",     desc:"Verstopft. Darmpassage zu langsam.",          farbe:"#E8927C" },
+  { typ:3, emoji:"🌭", label:"Typ 3 – Wurstförmig mit Rissen",  desc:"Normal bis leicht fest. Tendenz zu Verstopfung.", farbe:"#8BAF8D" },
+  { typ:4, emoji:"🍌", label:"Typ 4 – Glatt und weich",         desc:"Ideal! Perfekte Konsistenz und Passage.",    farbe:"#2D6B30" },
+  { typ:5, emoji:"🍓", label:"Typ 5 – Weiche Klümpchen",        desc:"Leicht dünnflüssig. Darmpassage zu schnell.", farbe:"#F5C5A3" },
+  { typ:6, emoji:"🥣", label:"Typ 6 – Breiig, ausgefranst",     desc:"Leichter Durchfall. Entzündung möglich.",    farbe:"#D97474" },
+  { typ:7, emoji:"💧", label:"Typ 7 – Wässrig, ohne Feststoffe",desc:"Starker Durchfall. Flüssigkeitsverlust!",    farbe:"#9B2222" },
+];
+
+const nowTime = () => new Date().toTimeString().slice(0,5); // "HH:MM"
+
 const TC_FRAGEN = [
   {id:"schlaf",text:"Wie hast du geschlafen?",typ:"skala",lmin:"😴 Sehr schlecht",lmax:"✨ Perfekt"},
   {id:"stimmung",text:"Wie ist deine Stimmung heute?",typ:"skala",lmin:"😔 Gedrückt",lmax:"😊 Sehr gut"},
@@ -1565,6 +1584,7 @@ function renderPage() {
     dashboard: renderDashboard,
     lebensmittel: renderLebensmittel,
     tracking: renderTracking,
+    symptome: renderSymptomZeit,
     kochbuch: renderKochbuch,
     wochenplan: renderWochenplan,
     zyklus: renderZyklus,
@@ -1962,13 +1982,14 @@ function setToleranzAndRefresh(name, status) {
 
 // ── TRACKING ───────────────────────────────────────────────────────
 let trkDate=today(); let trkFormOpen=false; let trkEditId=null;
-let trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today()};
+let trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:today(),uhrzeit:nowTime()};
 
 function renderTracking() {
-  const types=['Frühstück','Mittagessen','Abendessen','Snack'];
+  const types=['Frühstück','Mittagessen','Abendessen','Snack','Getränke'];
   const meals=state.mahlzeiten.filter(m=>m.datum===trkDate)
     .sort((a,b)=>types.indexOf(a.typ)-types.indexOf(b.typ));
   const emojis=['🍽️','🥣','🥗','🍲','🍜','🥚','🍳','🥩','🐟','🍗','🥦','🥔','🍌','🥤','🫖','🍵','🫙','🧆'];
+  const getraenkeEmojis=['💧','🫖','🍵','☕','🥤','🧃','🍷','🥛','🍺'];
 
   // Datum-Navigation: Pfeile für Vor/Zurück
   const prevDate = new Date(trkDate); prevDate.setDate(prevDate.getDate()-1);
@@ -1979,9 +2000,14 @@ function renderTracking() {
   const datumLabel = isToday ? 'Heute' :
     new Date(trkDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
 
+  // Getränke-Tageszusammenfassung
+  const getraenkeHeute = meals.filter(m=>m.typ==='Getränke');
+  const wasserMl = getraenkeHeute.filter(g=>/wasser/i.test(g.name)).reduce((s,g)=>s+(g.menge||0),0);
+  const koffeinCount = getraenkeHeute.filter(g=>/kaffee|espresso|schwarzer tee|grüner tee|cola/i.test(g.name)).length;
+
   return `
     <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">Mahlzeiten-Tracking</h1>
-    <p class="fs-xs c-lt mb12">Erfasse und bearbeite deine Mahlzeiten – auch für vergangene Tage</p>
+    <p class="fs-xs c-lt mb12">Erfasse Essen & Getränke – auch für vergangene Tage</p>
 
     <div class="card" style="padding:14px">
       <div class="flex-sb mb12">
@@ -1994,34 +2020,48 @@ function renderTracking() {
           </div>
           <button onclick="trkDate='${nextStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem${isToday?';opacity:.3;pointer-events:none':''}">›</button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:trkDate};trkFormOpen=true;renderPage()">
-          + Erfassen
-        </button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="trkEditId=null;trkForm={name:'',typ:'Getränke',fodmap:'g',reflux:'g',emoji:'💧',notiz:'',bew:0,menge:null,datum:trkDate,uhrzeit:nowTime()};trkFormOpen=true;renderPage()" title="Getränk erfassen">🥤 +</button>
+          <button class="btn btn-primary btn-sm" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,menge:null,datum:trkDate,uhrzeit:nowTime()};trkFormOpen=true;renderPage()">
+            + Erfassen
+          </button>
+        </div>
       </div>
 
-      ${trkFormOpen ? renderTrkForm(emojis, types) : ''}
+      ${trkFormOpen ? renderTrkForm(emojis, getraenkeEmojis, types) : ''}
     </div>
+
+    ${getraenkeHeute.length>0 ? `
+    <div class="card" style="padding:12px 14px;background:linear-gradient(135deg,#E8F2F8,#D8E8F0)">
+      <div class="fw-7 fs-sm c-warm" style="margin-bottom:4px">💧 Getränke heute: ${getraenkeHeute.length}</div>
+      <div class="fs-xs c-lt">
+        ${wasserMl>0?`${wasserMl}ml Wasser`:''}
+        ${wasserMl>0&&koffeinCount>0?' · ':''}
+        ${koffeinCount>0?`${koffeinCount}× koffeinhaltig`:''}
+        ${wasserMl===0&&koffeinCount===0?'Erfasst, aber ohne Mengenangabe':''}
+      </div>
+    </div>`:''}
 
     ${meals.length===0&&!trkFormOpen?`
     <div class="card ta-c" style="padding:28px 16px">
       <div style="font-size:2.5rem;margin-bottom:8px">🍽️</div>
       <p class="c-lt fs-sm">Noch keine Mahlzeiten für diesen Tag.</p>
-      <button class="btn btn-primary btn-sm mt12" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,datum:trkDate};trkFormOpen=true;renderPage()">Jetzt eintragen</button>
+      <button class="btn btn-primary btn-sm mt12" onclick="trkEditId=null;trkForm={name:'',typ:'Frühstück',fodmap:'g',reflux:'g',emoji:'🍽️',notiz:'',bew:0,menge:null,datum:trkDate,uhrzeit:nowTime()};trkFormOpen=true;renderPage()">Jetzt eintragen</button>
     </div>`:''}
 
     ${types.map(typ=>{
       const g=meals.filter(m=>m.typ===typ);
       if(!g.length) return '';
       return `
-        <div class="sect-hd">${typ}</div>
+        <div class="sect-hd">${typ==='Getränke'?'🥤 Getränke':typ}</div>
         ${g.map(m=>`
         <div class="card" style="padding:12px 14px;margin-bottom:8px">
           <div class="flex-sb">
             <div class="flex-c" style="gap:10px;flex:1;min-width:0">
               <span style="font-size:1.4rem;flex-shrink:0">${m.emoji||'🍽️'}</span>
               <div style="min-width:0">
-                <div class="fw-7 fs-md" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}</div>
-                ${m.notiz?`<div class="fs-xs c-lt mt4" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.notiz)}</div>`:''}
+                <div class="fw-7 fs-md" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.name)}${m.menge?` <span class="fs-xs c-lt fw-4">(${m.menge}ml)</span>`:''}</div>
+                <div class="fs-xs c-lt mt2">${m.uhrzeit||''} ${m.notiz?'· '+esc(m.notiz):''}</div>
               </div>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
@@ -2039,36 +2079,312 @@ function renderTracking() {
   `;
 }
 
-function renderTrkForm(emojis, types) {
+const GETRAENKE_SCHNELL = [
+  {name:'Wasser',emoji:'💧',fodmap:'g',reflux:'g',menge:250},
+  {name:'Kamillentee',emoji:'🫖',fodmap:'g',reflux:'g',menge:250},
+  {name:'Ingwertee',emoji:'🫖',fodmap:'g',reflux:'g',menge:250},
+  {name:'Pfefferminztee',emoji:'🫖',fodmap:'g',reflux:'r',menge:250},
+  {name:'Kaffee',emoji:'☕',fodmap:'g',reflux:'r',menge:200},
+  {name:'Grüner Tee',emoji:'🍵',fodmap:'g',reflux:'y',menge:200},
+  {name:'Mandelmilch',emoji:'🥛',fodmap:'g',reflux:'g',menge:200},
+  {name:'Kohlensäurehaltiges Wasser',emoji:'🥤',fodmap:'g',reflux:'r',menge:250},
+  {name:'Alkohol',emoji:'🍷',fodmap:'r',reflux:'r',menge:150},
+];
+
+function setGetraenkSchnell(i) {
+  const g = GETRAENKE_SCHNELL[i];
+  if(!g) return;
+  trkForm = { ...trkForm, name:g.name, emoji:g.emoji, fodmap:g.fodmap, reflux:g.reflux, menge:g.menge };
+  renderPage();
+}
+
+// ── SYMPTOM & STUHL TRACKING ────────────────────────────────────────
+let symDate = today();
+let symFormOpen = false;
+let symFormTyp = 'symptom'; // 'symptom' | 'stuhl'
+let stuhlFormOpen = false;
+
+function renderSymptomZeit() {
+  const prevDate = new Date(symDate); prevDate.setDate(prevDate.getDate()-1);
+  const nextDate = new Date(symDate); nextDate.setDate(nextDate.getDate()+1);
+  const prevStr = prevDate.toISOString().split('T')[0];
+  const nextStr = nextDate.toISOString().split('T')[0];
+  const isToday = symDate === today();
+  const datumLabel = isToday ? 'Heute' :
+    new Date(symDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+
+  const tagesSym  = (state.symptomZeit||[]).filter(s=>s.datum===symDate).sort((a,b)=>a.uhrzeit?.localeCompare(b.uhrzeit));
+  const tagesStuhl = (state.stuhlLogs||[]).filter(s=>s.datum===symDate).sort((a,b)=>a.uhrzeit?.localeCompare(b.uhrzeit));
+
+  return `
+    <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">🩺 Symptome & Stuhl</h1>
+    <p class="fs-xs c-lt mb12">Erfasse Beschwerden und Stuhlgang mit Uhrzeit</p>
+
+    <!-- Datum-Navigation -->
+    <div class="card" style="padding:14px">
+      <div class="flex-sb mb12">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="symDate='${prevStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem">‹</button>
+          <div style="text-align:center">
+            <div class="fw-7 fs-sm c-warm">${datumLabel}</div>
+            <input type="date" class="input" style="width:140px;padding:4px 8px;font-size:.72rem;margin-top:2px" value="${symDate}" onchange="symDate=this.value;renderPage()">
+          </div>
+          <button onclick="symDate='${nextStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem${isToday?';opacity:.3;pointer-events:none':''}">›</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="symFormTyp='stuhl';symFormOpen=true;renderPage()">💩 Stuhl</button>
+          <button class="btn btn-primary btn-sm" onclick="symFormTyp='symptom';symFormOpen=true;renderPage()">➕ Symptom</button>
+        </div>
+      </div>
+
+      ${symFormOpen ? renderSymForm() : ''}
+    </div>
+
+    <!-- Tagesübersicht Symptome -->
+    ${tagesSym.length ? `
+    <div class="sect-hd">Beschwerden heute</div>
+    ${tagesSym.map(s=>`
+    <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid ${s.intensitaet>=7?'#D97474':s.intensitaet>=4?'#F5C5A3':'#8BAF8D'}">
+      <div class="flex-sb">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="fw-7 fs-sm c-warm">${s.uhrzeit||''}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">${s.symptome.map(sym=>`<span class="tag tag-y" style="font-size:.68rem">${sym}</span>`).join('')}</div>
+          </div>
+          ${s.notiz?`<div class="fs-xs c-lt mt4">${esc(s.notiz)}</div>`:''}
+          <div class="fs-xs c-lt mt4">Intensität: ${renderIntensitaetBar(s.intensitaet)}</div>
+        </div>
+        <button onclick="deleteSym(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px">🗑️</button>
+      </div>
+    </div>`).join('')}
+    ` : ''}
+
+    <!-- Tagesübersicht Stuhlgang -->
+    ${tagesStuhl.length ? `
+    <div class="sect-hd">💩 Stuhlgang heute</div>
+    ${tagesStuhl.map(s=>{
+      const b = BRISTOL.find(x=>x.typ===s.bristolTyp)||BRISTOL[3];
+      return `
+      <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid ${b.farbe}">
+        <div class="flex-sb">
+          <div style="flex:1">
+            <div class="flex-c" style="gap:8px">
+              <span class="fw-7 fs-sm c-warm">${s.uhrzeit||''}</span>
+              <span style="font-size:1.2rem">${b.emoji}</span>
+              <span class="fw-7 fs-sm">${b.label}</span>
+            </div>
+            <div class="fs-xs c-lt mt4">${b.desc}</div>
+            ${s.notiz?`<div class="fs-xs c-lt mt4">📝 ${esc(s.notiz)}</div>`:''}
+          </div>
+          <button onclick="deleteStuhl(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px">🗑️</button>
+        </div>
+      </div>`;
+    }).join('')}
+    ` : ''}
+
+    ${!tagesSym.length && !tagesStuhl.length && !symFormOpen ? `
+    <div class="card ta-c" style="padding:28px 16px">
+      <div style="font-size:2.5rem;margin-bottom:8px">🩺</div>
+      <p class="c-lt fs-sm">Noch keine Einträge für diesen Tag.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+        <button class="btn btn-secondary btn-sm" onclick="symFormTyp='stuhl';symFormOpen=true;renderPage()">💩 Stuhlgang erfassen</button>
+        <button class="btn btn-primary btn-sm" onclick="symFormTyp='symptom';symFormOpen=true;renderPage()">Symptom erfassen</button>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function renderIntensitaetBar(val) {
+  const pct = (val||0) * 10;
+  const col = val>=7?'#D97474':val>=4?'#F5C5A3':'#8BAF8D';
+  return `<span style="display:inline-flex;align-items:center;gap:6px">
+    <span style="display:inline-block;width:60px;height:5px;background:var(--border);border-radius:5px;overflow:hidden">
+      <span style="display:block;width:${pct}%;height:100%;background:${col};border-radius:5px"></span>
+    </span>
+    <span>${val||0}/10</span>
+  </span>`;
+}
+
+let symForm = { symptome:[], intensitaet:3, uhrzeit:nowTime(), notiz:'', datum:today() };
+let stuhlForm = { bristolTyp:4, uhrzeit:nowTime(), notiz:'', datum:today() };
+
+function renderSymForm() {
+  if(symFormTyp === 'stuhl') return renderStuhlForm();
+
+  return `
+    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid var(--border)">
+      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">➕ Symptom erfassen</div>
+      <div class="g2 mb12">
+        <div class="field">
+          <label class="label">Uhrzeit</label>
+          <input type="time" class="input" value="${symForm.uhrzeit}" onchange="symForm.uhrzeit=this.value">
+        </div>
+        <div class="field">
+          <label class="label">Datum</label>
+          <input type="date" class="input" value="${symForm.datum||symDate}" onchange="symForm.datum=this.value">
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Symptome (mehrere möglich)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:150px;overflow-y:auto;padding:2px">
+          ${SYMPTOME.map(s=>`<span class="chip${symForm.symptome.includes(s)?' sel':''}"
+            onclick="symForm.symptome=symForm.symptome.includes('${s}')?symForm.symptome.filter(x=>x!=='${s}'):[...symForm.symptome,'${s}'];renderPage()"
+            >${s}</span>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Intensität: <strong class="c-rose">${symForm.intensitaet}/10</strong></label>
+        <input type="range" min="0" max="10" value="${symForm.intensitaet}" oninput="symForm.intensitaet=Number(this.value);document.getElementById('symIntVal').textContent=this.value+'/10'">
+        <div style="display:flex;justify-content:space-between;" class="fs-xs c-lt"><span>💚 Keine</span><span id="symIntVal">${symForm.intensitaet}/10</span><span>🔴 Stark</span></div>
+      </div>
+      <div class="field">
+        <label class="label">Notiz (optional)</label>
+        <textarea class="textarea" rows="2" placeholder="z.B. nach dem Kaffee, beim Stress im Büro..." oninput="symForm.notiz=this.value">${esc(symForm.notiz)}</textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveSymptom()">✅ Speichern</button>
+        <button class="btn btn-secondary" onclick="symFormOpen=false;renderPage()">Abbrechen</button>
+      </div>
+    </div>`;
+}
+
+function renderStuhlForm() {
+  return `
+    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid var(--border)">
+      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">💩 Stuhlgang erfassen</div>
+      <div class="g2 mb14">
+        <div class="field">
+          <label class="label">Uhrzeit</label>
+          <input type="time" class="input" value="${stuhlForm.uhrzeit}" onchange="stuhlForm.uhrzeit=this.value">
+        </div>
+        <div class="field">
+          <label class="label">Datum</label>
+          <input type="date" class="input" value="${stuhlForm.datum||symDate}" onchange="stuhlForm.datum=this.value">
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Bristol-Stuhlformskala</label>
+        <p class="fs-xs c-lt mb8">Wähle die Form die am besten passt:</p>
+        ${BRISTOL.map(b=>`
+        <div onclick="stuhlForm.bristolTyp=${b.typ};renderPage()"
+          style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;margin-bottom:6px;cursor:pointer;
+                 border:2px solid ${stuhlForm.bristolTyp===b.typ?b.farbe:'var(--border)'};
+                 background:${stuhlForm.bristolTyp===b.typ?b.farbe+'22':'white'}">
+          <span style="font-size:1.6rem;flex-shrink:0">${b.emoji}</span>
+          <div style="flex:1">
+            <div class="fw-7 fs-sm" style="color:${b.farbe}">${b.label}</div>
+            <div class="fs-xs c-lt">${b.desc}</div>
+          </div>
+          ${stuhlForm.bristolTyp===b.typ?`<span style="color:${b.farbe};font-size:1.1rem">✓</span>`:''}
+        </div>`).join('')}
+      </div>
+      <div class="field">
+        <label class="label">Notiz (optional)</label>
+        <textarea class="textarea" rows="2" placeholder="z.B. Bauchkrämpfe davor, Schmerzen..." oninput="stuhlForm.notiz=this.value">${esc(stuhlForm.notiz)}</textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveStuhl()">✅ Speichern</button>
+        <button class="btn btn-secondary" onclick="symFormOpen=false;renderPage()">Abbrechen</button>
+      </div>
+    </div>`;
+}
+
+function saveSymptom() {
+  if(!symForm.symptome.length) { alert('Bitte mindestens ein Symptom auswählen'); return; }
+  const entry = { ...symForm, datum: symForm.datum||symDate, id: Date.now() };
+  save('symptomZeit', [...(state.symptomZeit||[]), entry]);
+  symForm = { symptome:[], intensitaet:3, uhrzeit:nowTime(), notiz:'', datum:symDate };
+  symFormOpen = false;
+  renderPage();
+}
+
+function saveStuhl() {
+  const entry = { ...stuhlForm, datum: stuhlForm.datum||symDate, id: Date.now() };
+  save('stuhlLogs', [...(state.stuhlLogs||[]), entry]);
+  stuhlForm = { bristolTyp:4, uhrzeit:nowTime(), notiz:'', datum:symDate };
+  symFormOpen = false;
+  renderPage();
+}
+
+function deleteSym(id) {
+  save('symptomZeit', (state.symptomZeit||[]).filter(s=>s.id!==id));
+  renderPage();
+}
+
+function deleteStuhl(id) {
+  save('stuhlLogs', (state.stuhlLogs||[]).filter(s=>s.id!==id));
+  renderPage();
+}
+
+function renderTrkForm(emojis, getraenkeEmojis, types) {
   const isEdit = trkEditId !== null;
+  const isGetraenk = trkForm.typ === 'Getränke';
+  const activeEmojis = isGetraenk ? getraenkeEmojis : emojis;
+
   return `
     <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid ${isEdit?'var(--rose)':'var(--border)'}">
       <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">
-        ${isEdit ? '✏️ Mahlzeit bearbeiten' : '🍽️ Neue Mahlzeit'}
+        ${isEdit ? '✏️ Eintrag bearbeiten' : (isGetraenk ? '🥤 Neues Getränk' : '🍽️ Neue Mahlzeit')}
       </div>
+
+      <!-- Typ-Umschalter: Mahlzeit vs Getränk -->
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button type="button" onclick="trkForm.typ='Frühstück';trkForm.emoji='🍽️';renderPage()"
+          style="flex:1;padding:8px;border-radius:10px;border:2px solid ${!isGetraenk?'var(--rose)':'var(--border)'};background:${!isGetraenk?'var(--peach)':'white'};cursor:pointer;font-size:.8rem;font-weight:700;color:${!isGetraenk?'var(--warm)':'var(--text-lt)'}">
+          🍽️ Mahlzeit
+        </button>
+        <button type="button" onclick="trkForm.typ='Getränke';trkForm.emoji='💧';renderPage()"
+          style="flex:1;padding:8px;border-radius:10px;border:2px solid ${isGetraenk?'var(--sky)':'var(--border)'};background:${isGetraenk?'#D4E9F5':'white'};cursor:pointer;font-size:.8rem;font-weight:700;color:${isGetraenk?'#1A5C80':'var(--text-lt)'}">
+          🥤 Getränk
+        </button>
+      </div>
+
+      ${isGetraenk ? `
+      <div class="field">
+        <label class="label">Schnellauswahl</label>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${GETRAENKE_SCHNELL.map((g,i) => `<span class="chip${trkForm.name===g.name?' sel':''}"
+            onclick="setGetraenkSchnell(${i})">${g.emoji} ${g.name}</span>`).join('')}
+        </div>
+      </div>` : ''}
+
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
-        ${emojis.map(e=>`<span
+        ${activeEmojis.map(e=>`<span
           onclick="trkForm.emoji='${e}';document.getElementById('trkEmoji').value='${e}';document.querySelectorAll('.emoji-btn').forEach(s=>s.style.background='transparent');this.style.background='var(--peach)'"
           class="emoji-btn"
           style="cursor:pointer;font-size:1.2rem;padding:4px 5px;border-radius:8px;background:${trkForm.emoji===e?'var(--peach)':'transparent'}">${e}</span>`).join('')}
       </div>
       <input type="hidden" id="trkEmoji" value="${trkForm.emoji}">
       <div class="field">
-        <label class="label">Name *</label>
-        <input class="input" id="trkName" value="${esc(trkForm.name)}" placeholder="z.B. Haferbrei mit Blaubeeren" oninput="trkForm.name=this.value">
+        <label class="label">${isGetraenk?'Getränk *':'Name *'}</label>
+        <input class="input" id="trkName" value="${esc(trkForm.name)}" placeholder="${isGetraenk?'z.B. Kamillentee':'z.B. Haferbrei mit Blaubeeren'}" oninput="trkForm.name=this.value">
       </div>
       <div class="g2">
         <div class="field">
-          <label class="label">Mahlzeit-Typ</label>
+          <label class="label">${isGetraenk?'Tageszeit':'Mahlzeit-Typ'}</label>
+          ${isGetraenk ? `
+          <select class="select" onchange="trkForm.typVisual=this.value">
+            <option>Morgens</option><option>Mittags</option><option>Nachmittags</option><option>Abends</option>
+          </select>` : `
           <select class="select" onchange="trkForm.typ=this.value">
-            ${types.map(t=>`<option${trkForm.typ===t?' selected':''}>${t}</option>`).join('')}
-          </select>
+            ${types.filter(t=>t!=='Getränke').map(t=>`<option${trkForm.typ===t?' selected':''}>${t}</option>`).join('')}
+          </select>`}
         </div>
+      <div class="g2">
         <div class="field">
           <label class="label">Datum</label>
           <input type="date" class="input" value="${trkForm.datum}" onchange="trkForm.datum=this.value">
         </div>
+        <div class="field">
+          <label class="label">Uhrzeit</label>
+          <input type="time" class="input" value="${trkForm.uhrzeit||nowTime()}" onchange="trkForm.uhrzeit=this.value">
+        </div>
       </div>
+      ${isGetraenk ? `
+      <div class="field">
+        <label class="label">Menge (ml)</label>
+        <input type="number" class="input" value="${trkForm.menge||''}" placeholder="z.B. 250" oninput="trkForm.menge=this.value?Number(this.value):null">
+      </div>` : ''}
       <div class="g2">
         <div class="field">
           <label class="label">FODMAP</label>
@@ -2104,7 +2420,7 @@ function renderTrkForm(emojis, types) {
           ${isEdit ? '💾 Änderungen speichern' : '✅ Speichern'}
         </button>
         <button class="btn btn-secondary" onclick="trkFormOpen=false;trkEditId=null;renderPage()">Abbrechen</button>
-        ${isEdit ? `<button class="btn btn-secondary" style="color:var(--red);border-color:var(--red)" onclick="if(confirm('Mahlzeit löschen?')){deleteMahlzeit(${trkEditId})}">🗑️ Löschen</button>` : ''}
+        ${isEdit ? `<button class="btn btn-secondary" style="color:var(--red);border-color:var(--red)" onclick="if(confirm('Eintrag löschen?')){deleteMahlzeit(${trkEditId})}">🗑️ Löschen</button>` : ''}
       </div>
     </div>`;
 }
@@ -2114,7 +2430,8 @@ function editMahlzeit(id) {
   if(!m) return;
   trkEditId = id;
   trkForm = { name:m.name, typ:m.typ||'Frühstück', fodmap:m.fodmap||'g', reflux:m.reflux||'g',
-              emoji:m.emoji||'🍽️', notiz:m.notiz||'', bew:m.bew||0, datum:m.datum||trkDate };
+              emoji:m.emoji||'🍽️', notiz:m.notiz||'', bew:m.bew||0, menge:m.menge||null,
+              uhrzeit:m.uhrzeit||nowTime(), datum:m.datum||trkDate };
   trkFormOpen = true;
   trkDate = m.datum || trkDate; // zur richtigen Tag springen
   renderPage();
@@ -2137,7 +2454,7 @@ function saveMahlzeit() {
     save('mahlzeiten', [...state.mahlzeiten, { ...updated, id: Date.now() }]);
   }
   trkDate = updated.datum; // zeige den Tag der Mahlzeit
-  trkForm = { name:'', typ:'Frühstück', fodmap:'g', reflux:'g', emoji:'🍽️', notiz:'', bew:0, datum:trkDate };
+  trkForm = { name:'', typ:'Frühstück', fodmap:'g', reflux:'g', emoji:'🍽️', notiz:'', bew:0, menge:null, datum:trkDate, uhrzeit:nowTime() };
   trkFormOpen = false;
   renderPage();
 }
@@ -3206,6 +3523,8 @@ function renderAnalyse() {
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - anaZeitraum);
   const logs  = state.symptomLogs.filter(l => new Date(l.datum) >= cutoff);
   const meals = state.mahlzeiten.filter(m => new Date(m.datum) >= cutoff);
+  const stuhl = (state.stuhlLogs||[]).filter(s => new Date(s.datum) >= cutoff);
+  const symZeit = (state.symptomZeit||[]).filter(s => new Date(s.datum) >= cutoff);
 
   const minDaten = 5; // Mindestanzahl Check-ins für aussagekräftige Analyse
   const genugDaten = logs.length >= minDaten;
@@ -3218,7 +3537,7 @@ function renderAnalyse() {
       <div class="flex-c" style="gap:6px;flex-wrap:wrap">
         ${[14,30,60,90].map(t=>`<button class="btn btn-xs ${anaZeitraum===t?'btn-primary':'btn-secondary'}" onclick="anaZeitraum=${t};renderPage()">${t} Tage</button>`).join('')}
       </div>
-      <p class="fs-xs c-lt mt8">${logs.length} Tages-Check-ins · ${meals.length} Mahlzeiten im Zeitraum</p>
+      <p class="fs-xs c-lt mt8">${logs.length} Tages-Check-ins · ${meals.length} Mahlzeiten · ${stuhl.length} Stuhlgang-Einträge · ${symZeit.length} Symptom-Einträge im Zeitraum</p>
     </div>
 
     ${!genugDaten ? `
@@ -3229,6 +3548,9 @@ function renderAnalyse() {
       <p class="fs-xs c-lt mt12">💡 Fülle weiter täglich den Tagescheck aus und erfasse deine Mahlzeiten – nach ein paar Tagen erkennt die Analyse erste Muster.</p>
     </div>` : `
     ${renderLebensmittelKorrelation(meals)}
+    ${renderGetraenkeKorrelation(meals)}
+    ${renderBristolAnalyse(stuhl, meals)}
+    ${renderSymptomZeitAnalyse(symZeit, meals)}
     ${renderSchlafKorrelation(logs)}
     ${renderStressKorrelation(logs)}
     ${renderZyklusKorrelation(logs)}
@@ -3497,6 +3819,234 @@ function renderSymptomMuster(logs) {
 }
 
 // ── Überraschende Funde: Verträglichkeits-Markierungen vs. tatsächliche Bewertungen ──
+// ── Getränke-Auswertung ──────────────────────────────────────────
+function renderGetraenkeKorrelation(meals) {
+  const getraenke = meals.filter(m => m.typ === 'Getränke');
+  if(getraenke.length < 3) return '';
+
+  // Häufigkeit pro Getränk
+  const count = {};
+  getraenke.forEach(g => { count[g.name] = (count[g.name]||0) + 1; });
+  const top = Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Verträglichkeit pro Getränk (nur bewertete)
+  const bewertete = getraenke.filter(g => g.bew > 0);
+  const stats = {};
+  bewertete.forEach(g => {
+    if(!stats[g.name]) stats[g.name] = [];
+    stats[g.name].push(g.bew);
+  });
+  const schlecht = Object.entries(stats)
+    .map(([name, bews]) => ({ name, avg: bews.reduce((a,b)=>a+b,0)/bews.length, count: bews.length }))
+    .filter(x => x.count >= 2 && x.avg <= 2.5)
+    .sort((a,b) => a.avg - b.avg);
+
+  // Reflux-Trigger-Getränke die häufig getrunken werden
+  const refluxTrigger = getraenke.filter(g => g.reflux === 'r');
+  const refluxTriggerCount = {};
+  refluxTrigger.forEach(g => { refluxTriggerCount[g.name] = (refluxTriggerCount[g.name]||0) + 1; });
+  const haeufigeRefluxTrigger = Object.entries(refluxTriggerCount).filter(([k,v])=>v>=3).sort((a,b)=>b[1]-a[1]);
+
+  return `
+    <div class="card">
+      <div class="card-title">💧 Getränke-Auswertung</div>
+      <p class="fs-xs c-lt mb12">${getraenke.length} Getränke erfasst im Zeitraum</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:${schlecht.length||haeufigeRefluxTrigger.length?'14px':'0'}">
+        ${top.map(([name,n])=>`<span class="tag tag-b" style="font-size:.78rem">${esc(name)} (${n}×)</span>`).join('')}
+      </div>
+
+      ${haeufigeRefluxTrigger.length ? `
+      <div style="background:#FFF0E0;border:1.5px solid #F5C5A3;border-radius:12px;padding:12px 14px;margin-bottom:${schlecht.length?'12px':'0'}">
+        <div class="fw-7" style="font-size:.82rem;color:#9B5800;margin-bottom:6px">🔥 Häufige Reflux-Trigger-Getränke</div>
+        <p class="fs-sm" style="line-height:1.6">
+          ${haeufigeRefluxTrigger.map(([name,n])=>`<strong>${esc(name)}</strong> (${n}×)`).join(', ')}
+          ${haeufigeRefluxTrigger.length===1?' wird':' werden'} regelmäßig getrunken, obwohl ${haeufigeRefluxTrigger.length===1?'es':'sie'} als Reflux-Trigger gilt/gelten.
+        </p>
+      </div>` : ''}
+
+      ${schlecht.length ? `
+      <div>
+        <div class="fw-7 fs-sm" style="color:#9B2222;margin-bottom:6px">😣 Schlecht vertragene Getränke</div>
+        ${schlecht.map(x=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#FFF5F5;border-radius:8px;margin-bottom:4px">
+          <span class="fs-sm">${esc(x.name)}</span>
+          <span class="fs-xs c-lt">${'⭐'.repeat(Math.round(x.avg))} (${x.count}×)</span>
+        </div>`).join('')}
+      </div>` : ''}
+
+      <p class="fs-xs c-lt mt8">💡 Kaffee, Alkohol und kohlensäurehaltige Getränke entspannen den unteren Speiseröhrenschließmuskel und sind häufige Reflux-Auslöser – unabhängig vom FODMAP-Gehalt.</p>
+    </div>`;
+}
+
+// ── Bristol-Analyse ───────────────────────────────────────────────
+function renderBristolAnalyse(stuhl, meals) {
+  if(stuhl.length < 3) return '';
+
+  // Häufigkeit der Typen
+  const count = {};
+  stuhl.forEach(s => { count[s.bristolTyp] = (count[s.bristolTyp]||0)+1; });
+  const häufigster = Object.entries(count).sort((a,b)=>b[1]-a[1])[0];
+  const häufigstes = BRISTOL.find(b=>b.typ===Number(häufigster[0]));
+
+  // Durchschnittlicher Typ
+  const avg = stuhl.reduce((s,x)=>s+x.bristolTyp,0)/stuhl.length;
+
+  // Trend über Zeit: erste Hälfte vs zweite Hälfte
+  const sorted = [...stuhl].sort((a,b)=>a.datum.localeCompare(b.datum));
+  const half = Math.floor(sorted.length/2);
+  const ersteHälfte = sorted.slice(0,half);
+  const zweiteHälfte = sorted.slice(half);
+  const avgErs = ersteHälfte.length ? ersteHälfte.reduce((s,x)=>s+x.bristolTyp,0)/ersteHälfte.length : 0;
+  const avgZwei = zweiteHälfte.length ? zweiteHälfte.reduce((s,x)=>s+x.bristolTyp,0)/zweiteHälfte.length : 0;
+  const trend = avgZwei - avgErs;
+
+  // Korrelation mit Mahlzeiten: Reflexzeit ~8h prüfen
+  // An Tagen mit hohem Reflux-Essen (fodmap:'r') häufiger Typ 6/7?
+  const tageHighFODMAP = new Set(meals.filter(m=>m.fodmap==='r').map(m=>m.datum));
+  const stuhlNachHighFODMAP = stuhl.filter(s=>tageHighFODMAP.has(s.datum));
+  const stuhlNachNormal = stuhl.filter(s=>!tageHighFODMAP.has(s.datum));
+  const avgNachHighFODMAP = stuhlNachHighFODMAP.length ? stuhlNachHighFODMAP.reduce((s,x)=>s+x.bristolTyp,0)/stuhlNachHighFODMAP.length : 0;
+  const avgNachNormal = stuhlNachNormal.length ? stuhlNachNormal.reduce((s,x)=>s+x.bristolTyp,0)/stuhlNachNormal.length : 0;
+
+  return `
+    <div class="card">
+      <div class="card-title">💩 Stuhlgang-Analyse (Bristol-Skala)</div>
+      <p class="fs-xs c-lt mb12">${stuhl.length} Einträge · Normalbereich: Typ 3–4</p>
+
+      <!-- Typ-Verteilung als Mini-Balkengrafik -->
+      <div style="margin-bottom:16px">
+        ${BRISTOL.map(b=>{
+          const n = count[b.typ]||0;
+          const pct = stuhl.length ? Math.round((n/stuhl.length)*100) : 0;
+          if(!n) return '';
+          return `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:1rem;flex-shrink:0">${b.emoji}</span>
+            <span class="fs-xs fw-7" style="width:16px;flex-shrink:0;color:${b.farbe}">${b.typ}</span>
+            <div style="flex:1;background:var(--border);border-radius:10px;height:12px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:${b.farbe};border-radius:10px;transition:width .5s"></div>
+            </div>
+            <span class="fs-xs c-lt" style="width:36px;flex-shrink:0">${n}× (${pct}%)</span>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Auswertung -->
+      <div style="background:${avg>=3&&avg<=4?'#EDF5EE':'#FFF0E0'};border-radius:12px;padding:12px 14px;margin-bottom:12px">
+        <div class="fw-7 fs-sm" style="color:${avg>=3&&avg<=4?'#2D6B30':'#9B5800'};margin-bottom:4px">
+          ${avg>=3&&avg<=4?'✅ Stuhlgang im Normalbereich':'⚠️ Stuhlgang außerhalb des Normalbereichs'}
+        </div>
+        <p class="fs-sm" style="line-height:1.6">
+          Häufigster Typ: <strong>${häufigstes?.emoji} ${häufigstes?.label}</strong><br>
+          Durchschnitt: Typ ${avg.toFixed(1)}
+          ${avg<3?' — Tendenz zu Verstopfung (zu langsame Passage)':''}
+          ${avg>4?' — Tendenz zu Durchfall (zu schnelle Passage)':''}
+          ${avg>=3&&avg<=4?' — gut!':''}
+        </p>
+      </div>
+
+      ${Math.abs(trend)>=0.5 ? `
+      <div class="fs-sm c-lt" style="margin-bottom:10px">
+        📈 Trend im Zeitraum: ${trend>0?'Richtung Durchfall (weicher werdend)':'Richtung Verstopfung (fester werdend)'} (${trend>0?'+':''}${trend.toFixed(1)} Typen)
+      </div>` : ''}
+
+      ${stuhlNachHighFODMAP.length>=2 && stuhlNachNormal.length>=2 && Math.abs(avgNachHighFODMAP-avgNachNormal)>=0.8 ? `
+      <div style="background:#FFF5F5;border-radius:10px;padding:10px 12px;font-size:.82rem">
+        🔬 <strong>Zusammenhang mit Ernährung:</strong> An Tagen mit High-FODMAP-Essen war der Stuhltyp im Schnitt ${avgNachHighFODMAP>avgNachNormal?'weicher (Richtung Durchfall)':'fester (Richtung Verstopfung)'} als an normalen Tagen.
+      </div>` : ''}
+    </div>`;
+}
+
+// ── Symptom-Zeit-Analyse ──────────────────────────────────────────
+function renderSymptomZeitAnalyse(symZeit, meals) {
+  if(symZeit.length < 3) return '';
+
+  // Häufigste Symptome mit Uhrzeit
+  const count = {};
+  symZeit.forEach(s => s.symptome.forEach(sym => { count[sym]=(count[sym]||0)+1; }));
+  const top = Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Tageszeitliche Häufung
+  const stunden = { morgen:[], mittag:[], nachmittag:[], abend:[], nacht:[] };
+  symZeit.forEach(s => {
+    const h = parseInt(s.uhrzeit?.split(':')[0])||0;
+    if(h>=5&&h<10)       stunden.morgen.push(s);
+    else if(h>=10&&h<14) stunden.mittag.push(s);
+    else if(h>=14&&h<18) stunden.nachmittag.push(s);
+    else if(h>=18&&h<23) stunden.abend.push(s);
+    else                 stunden.nacht.push(s);
+  });
+  const zeitSlots = [
+    {key:'morgen',label:'🌅 Morgen (5–10h)'},
+    {key:'mittag',label:'☀️ Mittag (10–14h)'},
+    {key:'nachmittag',label:'🌤 Nachmittag (14–18h)'},
+    {key:'abend',label:'🌙 Abend (18–23h)'},
+    {key:'nacht',label:'🌑 Nacht (23–5h)'},
+  ].filter(z=>stunden[z.key].length>0);
+
+  // Schwerster Zeitpunkt
+  const schlimmsteZeit = zeitSlots.sort((a,b)=>{
+    const avgA = stunden[a.key].reduce((s,x)=>s+(x.intensitaet||0),0)/stunden[a.key].length;
+    const avgB = stunden[b.key].reduce((s,x)=>s+(x.intensitaet||0),0)/stunden[b.key].length;
+    return avgB-avgA;
+  })[0];
+
+  // Korrelation: Symptome wie lange nach Mahlzeiten?
+  const symptomNachMahlzeit = [];
+  symZeit.forEach(s => {
+    const symMinuten = timeToMin(s.uhrzeit);
+    const mahlzeitenHeute = meals.filter(m=>m.datum===s.datum&&m.uhrzeit);
+    mahlzeitenHeute.forEach(m => {
+      const mMin = timeToMin(m.uhrzeit);
+      const diff = symMinuten - mMin;
+      if(diff > 0 && diff <= 240) symptomNachMahlzeit.push({ diff, mahlzeit:m.name, symptome:s.symptome });
+    });
+  });
+  const avgAbstand = symptomNachMahlzeit.length ?
+    Math.round(symptomNachMahlzeit.reduce((s,x)=>s+x.diff,0)/symptomNachMahlzeit.length) : null;
+
+  return `
+    <div class="card">
+      <div class="card-title">⏱️ Symptome nach Uhrzeit</div>
+      <p class="fs-xs c-lt mb12">${symZeit.length} Einträge mit Zeitstempel</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px">
+        ${top.map(([s,n])=>`<span class="tag tag-y" style="font-size:.78rem">${s} (${n}×)</span>`).join('')}
+      </div>
+
+      ${schlimmsteZeit ? `
+      <div style="background:var(--cream);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+        <div class="fw-7 fs-sm c-warm mb6">Tageszeit-Verteilung</div>
+        ${zeitSlots.map(z=>{
+          const avg = stunden[z.key].length ? stunden[z.key].reduce((s,x)=>s+(x.intensitaet||0),0)/stunden[z.key].length : 0;
+          const pct = symZeit.length ? Math.round((stunden[z.key].length/symZeit.length)*100) : 0;
+          return `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span class="fs-xs" style="width:130px;flex-shrink:0">${z.label}</span>
+            <div style="flex:1;background:var(--border);border-radius:10px;height:10px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:var(--rose);border-radius:10px"></div>
+            </div>
+            <span class="fs-xs c-lt" style="width:54px;flex-shrink:0">${stunden[z.key].length}× (Ø ${avg.toFixed(1)})</span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      ${avgAbstand ? `
+      <div style="background:#EDF5EE;border-radius:10px;padding:10px 14px;font-size:.82rem">
+        🍽️ <strong>Mahlzeiten-Zusammenhang:</strong> Beschwerden treten im Schnitt <strong>${avgAbstand} Minuten nach einer Mahlzeit</strong> auf
+        (${avgAbstand<=30?'sehr schnell – mögliche Unverträglichkeit oder Gastro-ösophagealer Reflux':
+           avgAbstand<=90?'typisch für Reizdarm-Reaktion':'langsamer Zusammenhang – evtl. Fermentierung im Darm'}).
+      </div>` : ''}
+    </div>`;
+}
+
+function timeToMin(t) {
+  if(!t) return 0;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+(m||0);
+}
+
 function renderUeberraschendeFunde(meals) {
   // Vergleiche manuelle Toleranz-Markierungen mit tatsächlichen Sterne-Bewertungen
   const widersprueche = [];

@@ -667,6 +667,8 @@ const KEY_ALIAS = {
   symptomlogs:   'dg_symptome',
   chathistory:   'dg_chat',
   einkaufsliste: 'dg_einkauf',
+  stuhllogs:     'dg_stuhl',
+  symptomzeit:   'dg_symptomzeit',
 };
 const save = (key, val) => {
   state[key] = val;
@@ -2124,85 +2126,122 @@ function renderSymptomZeit() {
   const nextStr = nextDate.toISOString().split('T')[0];
   const isToday = symDate === today();
   const datumLabel = isToday ? 'Heute' :
-    new Date(symDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+    new Date(symDate+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'short'});
 
-  const tagesSym  = (state.symptomZeit||[]).filter(s=>s.datum===symDate).sort((a,b)=>a.uhrzeit?.localeCompare(b.uhrzeit));
-  const tagesStuhl = (state.stuhlLogs||[]).filter(s=>s.datum===symDate).sort((a,b)=>a.uhrzeit?.localeCompare(b.uhrzeit));
+  const tagesSym   = (state.symptomZeit||[]).filter(s=>s.datum===symDate).sort((a,b)=>(a.uhrzeit||'').localeCompare(b.uhrzeit||''));
+  const tagesStuhl = (state.stuhlLogs||[]).filter(s=>s.datum===symDate).sort((a,b)=>(a.uhrzeit||'').localeCompare(b.uhrzeit||''));
+
+  // Alle Tage mit irgendwelchen Einträgen (für Übersicht)
+  const alleSym   = state.symptomZeit||[];
+  const alleStuhl = state.stuhlLogs||[];
+  const alleDaten = [...new Set([...alleSym.map(s=>s.datum), ...alleStuhl.map(s=>s.datum)])].sort().reverse();
+  const andereTageMitDaten = alleDaten.filter(d=>d!==symDate);
+
+  const gesamtEintraege = alleSym.length + alleStuhl.length;
 
   return `
     <h1 class="c-warm" style="font-size:1.5rem;margin-bottom:4px">🩺 Symptome & Stuhl</h1>
-    <p class="fs-xs c-lt mb12">Erfasse Beschwerden und Stuhlgang mit Uhrzeit</p>
+    <p class="fs-xs c-lt mb12">Erfasse Beschwerden und Stuhlgang mit Uhrzeit · ${gesamtEintraege} Einträge gesamt</p>
 
     <!-- Datum-Navigation -->
     <div class="card" style="padding:14px">
       <div class="flex-sb mb12">
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="symDate='${prevStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem">‹</button>
+          <button onclick="symDate='${prevStr}';symFormOpen=false;renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">‹</button>
           <div style="text-align:center">
             <div class="fw-7 fs-sm c-warm">${datumLabel}</div>
-            <input type="date" class="input" style="width:140px;padding:4px 8px;font-size:.72rem;margin-top:2px" value="${symDate}" onchange="symDate=this.value;renderPage()">
+            <input type="date" class="input" style="width:145px;padding:4px 8px;font-size:.72rem;margin-top:3px" value="${symDate}"
+              onchange="symDate=this.value;symFormOpen=false;renderPage()">
           </div>
-          <button onclick="symDate='${nextStr}';renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.9rem${isToday?';opacity:.3;pointer-events:none':''}">›</button>
+          <button onclick="symDate='${nextStr}';symFormOpen=false;renderPage()" style="background:var(--cream);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;${isToday?'opacity:.3;pointer-events:none':''}">›</button>
         </div>
         <div style="display:flex;gap:6px">
           <button class="btn btn-secondary btn-sm" onclick="symFormTyp='stuhl';symFormOpen=true;renderPage()">💩 Stuhl</button>
           <button class="btn btn-primary btn-sm" onclick="symFormTyp='symptom';symFormOpen=true;renderPage()">➕ Symptom</button>
         </div>
       </div>
-
       ${symFormOpen ? renderSymForm() : ''}
     </div>
 
-    <!-- Tagesübersicht Symptome -->
-    ${tagesSym.length ? `
-    <div class="sect-hd">Beschwerden heute</div>
-    ${tagesSym.map(s=>`
-    <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid ${s.intensitaet>=7?'#D97474':s.intensitaet>=4?'#F5C5A3':'#8BAF8D'}">
-      <div class="flex-sb">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="fw-7 fs-sm c-warm">${s.uhrzeit||''}</span>
-            <div style="display:flex;flex-wrap:wrap;gap:4px">${s.symptome.map(sym=>`<span class="tag tag-y" style="font-size:.68rem">${sym}</span>`).join('')}</div>
-          </div>
-          ${s.notiz?`<div class="fs-xs c-lt mt4">${esc(s.notiz)}</div>`:''}
-          <div class="fs-xs c-lt mt4">Intensität: ${renderIntensitaetBar(s.intensitaet)}</div>
-        </div>
-        <button onclick="deleteSym(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px">🗑️</button>
-      </div>
-    </div>`).join('')}
-    ` : ''}
+    <!-- Einträge für gewählten Tag -->
+    ${tagesSym.length || tagesStuhl.length ? `
 
-    <!-- Tagesübersicht Stuhlgang -->
-    ${tagesStuhl.length ? `
-    <div class="sect-hd">💩 Stuhlgang heute</div>
-    ${tagesStuhl.map(s=>{
-      const b = BRISTOL.find(x=>x.typ===s.bristolTyp)||BRISTOL[3];
-      return `
-      <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid ${b.farbe}">
+      ${tagesSym.length ? `
+      <div class="sect-hd">Beschwerden ${isToday?'heute':datumLabel}</div>
+      ${tagesSym.map(s=>`
+      <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:4px solid ${s.intensitaet>=7?'#D97474':s.intensitaet>=4?'#F5C5A3':'#8BAF8D'}">
         <div class="flex-sb">
-          <div style="flex:1">
-            <div class="flex-c" style="gap:8px">
-              <span class="fw-7 fs-sm c-warm">${s.uhrzeit||''}</span>
-              <div style="width:32px;height:20px;display:flex;align-items:center">${b.shape}</div>
-              <span class="fw-7 fs-sm" style="color:${b.farbe}">${b.label}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="fw-8 fs-sm" style="color:var(--rose);flex-shrink:0">${s.uhrzeit||'–'} Uhr</span>
+              <div style="display:flex;flex-wrap:wrap;gap:3px">${(s.symptome||[]).map(sym=>`<span class="tag tag-y" style="font-size:.68rem">${sym}</span>`).join('')}</div>
             </div>
-            <div class="fs-xs c-lt mt4">${b.desc}</div>
-            ${s.notiz?`<div class="fs-xs c-lt mt4">📝 ${esc(s.notiz)}</div>`:''}
+            ${s.notiz?`<div class="fs-xs c-lt mt4">💬 ${esc(s.notiz)}</div>`:''}
+            <div class="fs-xs c-lt mt4">Intensität: ${renderIntensitaetBar(s.intensitaet)}</div>
           </div>
-          <button onclick="deleteStuhl(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px">🗑️</button>
+          <button onclick="deleteSym(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px;padding:4px">🗑️</button>
         </div>
-      </div>`;
-    }).join('')}
-    ` : ''}
+      </div>`).join('')}` : ''}
 
-    ${!tagesSym.length && !tagesStuhl.length && !symFormOpen ? `
-    <div class="card ta-c" style="padding:28px 16px">
-      <div style="font-size:2.5rem;margin-bottom:8px">🩺</div>
-      <p class="c-lt fs-sm">Noch keine Einträge für diesen Tag.</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
-        <button class="btn btn-secondary btn-sm" onclick="symFormTyp='stuhl';symFormOpen=true;renderPage()">💩 Stuhlgang erfassen</button>
-        <button class="btn btn-primary btn-sm" onclick="symFormTyp='symptom';symFormOpen=true;renderPage()">Symptom erfassen</button>
+      ${tagesStuhl.length ? `
+      <div class="sect-hd">Stuhlgang ${isToday?'heute':datumLabel}</div>
+      ${tagesStuhl.map(s=>{
+        const b = BRISTOL.find(x=>x.typ===s.bristolTyp)||BRISTOL[3];
+        return `
+        <div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:4px solid ${b.farbe}">
+          <div class="flex-sb">
+            <div style="flex:1">
+              <div class="flex-c" style="gap:8px;flex-wrap:wrap">
+                <span class="fw-8 fs-sm" style="color:var(--rose);flex-shrink:0">${s.uhrzeit||'–'} Uhr</span>
+                <div style="width:32px;height:20px;display:flex;align-items:center;flex-shrink:0">${b.shape}</div>
+                <span class="fw-7 fs-sm" style="color:${b.farbe}">${b.label}</span>
+              </div>
+              <div class="fs-xs c-lt mt4">${b.desc}</div>
+              ${s.notiz?`<div class="fs-xs c-lt mt4">💬 ${esc(s.notiz)}</div>`:''}
+            </div>
+            <button onclick="deleteStuhl(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px;padding:4px">🗑️</button>
+          </div>
+        </div>`;
+      }).join('')}` : ''}
+
+    ` : !symFormOpen ? `
+    <div class="card ta-c" style="padding:24px 16px">
+      <div style="font-size:2rem;margin-bottom:6px">🩺</div>
+      <p class="c-lt fs-sm">Keine Einträge für ${isToday?'heute':datumLabel}.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="symFormTyp='stuhl';symFormOpen=true;renderPage()">💩 Stuhlgang</button>
+        <button class="btn btn-primary btn-sm" onclick="symFormTyp='symptom';symFormOpen=true;renderPage()">➕ Symptom</button>
       </div>
+    </div>` : ''}
+
+    <!-- Alle anderen Tage mit Einträgen -->
+    ${andereTageMitDaten.length ? `
+    <div class="sect-hd mt12">Alle Einträge (${alleDaten.length} Tage)</div>
+    <div class="card" style="padding:10px 14px">
+      ${alleDaten.map(datum=>{
+        const sym   = alleSym.filter(s=>s.datum===datum);
+        const stuhl = alleStuhl.filter(s=>s.datum===datum);
+        const isSelected = datum === symDate;
+        return `
+        <div onclick="symDate='${datum}';symFormOpen=false;renderPage()"
+          style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:10px;cursor:pointer;margin-bottom:4px;
+                 background:${isSelected?'var(--peach)':'var(--cream)'};border:1px solid ${isSelected?'var(--rose)':'transparent'}">
+          <div>
+            <div class="fw-7 fs-sm" style="color:${isSelected?'var(--warm)':'var(--text)'}">
+              ${new Date(datum+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+              ${datum===today()?'<span class="tag tag-g" style="font-size:.62rem;margin-left:4px">heute</span>':''}
+            </div>
+            <div style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap">
+              ${sym.length?`<span class="fs-xs" style="color:var(--rose)">⚠️ ${sym.length} Symptom${sym.length>1?'e':''}</span>`:''}
+              ${stuhl.length?`<span class="fs-xs c-lt">💩 ${stuhl.length}×</span>`:''}
+            </div>
+          </div>
+          <span style="color:var(--warm-lt);font-size:1rem">›</span>
+        </div>`;
+      }).join('')}
+    </div>` : gesamtEintraege===0 ? `
+    <div style="background:#F0F8FF;border-radius:12px;padding:12px 14px;margin-top:8px;font-size:.82rem;color:var(--text-lt)">
+      💡 Tipp: Erfasse regelmäßig Symptome und Stuhlgang — nach ein paar Tagen erkennt die Analyse Muster und Zusammenhänge.
     </div>` : ''}
   `;
 }
@@ -2230,11 +2269,11 @@ function renderSymForm() {
       <div class="g2 mb12">
         <div class="field">
           <label class="label">Uhrzeit</label>
-          <input type="time" class="input" value="${symForm.uhrzeit}" onchange="symForm.uhrzeit=this.value">
+          <input type="time" id="sym-uhrzeit-input" class="input" value="${symForm.uhrzeit}" onchange="symForm.uhrzeit=this.value">
         </div>
         <div class="field">
           <label class="label">Datum</label>
-          <input type="date" class="input" value="${symForm.datum||symDate}" onchange="symForm.datum=this.value">
+          <input type="date" id="sym-datum-input" class="input" value="${symForm.datum||symDate}" onchange="symForm.datum=this.value">
         </div>
       </div>
       <div class="field">
@@ -2268,11 +2307,11 @@ function renderStuhlForm() {
       <div class="g2 mb14">
         <div class="field">
           <label class="label">Uhrzeit</label>
-          <input type="time" class="input" value="${stuhlForm.uhrzeit}" onchange="stuhlForm.uhrzeit=this.value">
+          <input type="time" id="stuhl-uhrzeit-input" class="input" value="${stuhlForm.uhrzeit}" onchange="stuhlForm.uhrzeit=this.value">
         </div>
         <div class="field">
           <label class="label">Datum</label>
-          <input type="date" class="input" value="${stuhlForm.datum||symDate}" onchange="stuhlForm.datum=this.value">
+          <input type="date" id="stuhl-datum-input" class="input" value="${stuhlForm.datum||symDate}" onchange="stuhlForm.datum=this.value">
         </div>
       </div>
       <div class="field">
@@ -2304,16 +2343,26 @@ function renderStuhlForm() {
 
 function saveSymptom() {
   if(!symForm.symptome.length) { alert('Bitte mindestens ein Symptom auswählen'); return; }
-  const entry = { ...symForm, datum: symForm.datum||symDate, id: Date.now() };
-  save('symptomZeit', [...(state.symptomZeit||[]), entry]);
+  // Datum aus dem Formular nehmen, nicht aus symDate
+  const datum = document.getElementById('sym-datum-input')?.value || symForm.datum || symDate;
+  const uhrzeit = document.getElementById('sym-uhrzeit-input')?.value || symForm.uhrzeit || nowTime();
+  const entry = { ...symForm, datum, uhrzeit, id: Date.now() };
+  const updated = [...(state.symptomZeit||[]), entry];
+  save('symptomZeit', updated);
+  // symDate auf das gespeicherte Datum setzen damit Eintrag sofort sichtbar ist
+  symDate = datum;
   symForm = { symptome:[], intensitaet:3, uhrzeit:nowTime(), notiz:'', datum:symDate };
   symFormOpen = false;
   renderPage();
 }
 
 function saveStuhl() {
-  const entry = { ...stuhlForm, datum: stuhlForm.datum||symDate, id: Date.now() };
-  save('stuhlLogs', [...(state.stuhlLogs||[]), entry]);
+  const datum = document.getElementById('stuhl-datum-input')?.value || stuhlForm.datum || symDate;
+  const uhrzeit = document.getElementById('stuhl-uhrzeit-input')?.value || stuhlForm.uhrzeit || nowTime();
+  const entry = { ...stuhlForm, datum, uhrzeit, id: Date.now() };
+  const updated = [...(state.stuhlLogs||[]), entry];
+  save('stuhlLogs', updated);
+  symDate = datum;
   stuhlForm = { bristolTyp:4, uhrzeit:nowTime(), notiz:'', datum:symDate };
   symFormOpen = false;
   renderPage();
@@ -4169,16 +4218,19 @@ function renderBericht() {
 
 function exportData() {
   const data = {
-    version: '1.4',
+    version: '1.7',
     exportDatum: today(),
     mahlzeiten: state.mahlzeiten,
     symptomLogs: state.symptomLogs,
+    stuhlLogs: state.stuhlLogs,
+    symptomZeit: state.symptomZeit,
     wochenplan: state.wochenplan,
     einkaufsliste: state.einkaufsliste,
     eigeneRezepte: state.eigeneRezepte,
     zyklusStart: state.zyklusStart,
     zyklusLaenge: state.zyklusLaenge,
     toleranz: state.toleranz,
+    lesezeichen: state.lesezeichen,
     letzterCheck: state.letzterCheck,
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -4198,16 +4250,25 @@ function importData(event) {
     try {
       const data = JSON.parse(e.target.result);
       if(!data.version) { alert('Ungültige Backup-Datei.'); return; }
-      if(data.mahlzeiten)  save('mahlzeiten', data.mahlzeiten);
-      if(data.symptomLogs) save('symptomLogs', data.symptomLogs);
-      if(data.wochenplan)  save('wochenplan', data.wochenplan);
+      if(data.mahlzeiten)    save('mahlzeiten', data.mahlzeiten);
+      if(data.symptomLogs)   save('symptomLogs', data.symptomLogs);
+      if(data.stuhlLogs)     save('stuhlLogs', data.stuhlLogs);
+      if(data.symptomZeit)   save('symptomZeit', data.symptomZeit);
+      if(data.wochenplan)    save('wochenplan', data.wochenplan);
       if(data.einkaufsliste) save('einkaufsliste', data.einkaufsliste);
       if(data.eigeneRezepte) save('eigeneRezepte', data.eigeneRezepte);
       if(data.zyklusStart !== undefined) save('zyklusStart', data.zyklusStart);
-      if(data.zyklusLaenge) save('zyklusLaenge', data.zyklusLaenge);
-      if(data.toleranz) save('toleranz', data.toleranz);
-      if(data.letzterCheck) save('letzterCheck', data.letzterCheck);
-      alert('✅ Daten erfolgreich importiert! (' + (data.mahlzeiten?.length||0) + ' Mahlzeiten, ' + (data.symptomLogs?.length||0) + ' Check-ins)');
+      if(data.zyklusLaenge)  save('zyklusLaenge', data.zyklusLaenge);
+      if(data.toleranz)      save('toleranz', data.toleranz);
+      if(data.lesezeichen)   save('lesezeichen', data.lesezeichen);
+      if(data.letzterCheck)  save('letzterCheck', data.letzterCheck);
+      const total = (data.mahlzeiten?.length||0) + (data.symptomLogs?.length||0) +
+                    (data.stuhlLogs?.length||0) + (data.symptomZeit?.length||0);
+      alert('✅ Import erfolgreich!\n' +
+        (data.mahlzeiten?.length||0) + ' Mahlzeiten\n' +
+        (data.symptomLogs?.length||0) + ' Tages-Check-ins\n' +
+        (data.stuhlLogs?.length||0) + ' Stuhlgang-Einträge\n' +
+        (data.symptomZeit?.length||0) + ' Symptom-Einträge');
       renderPage();
     } catch(err) {
       alert('Fehler beim Importieren: ' + err.message);

@@ -2179,7 +2179,10 @@ function renderSymptomZeit() {
             ${s.notiz?`<div class="fs-xs c-lt mt4">💬 ${esc(s.notiz)}</div>`:''}
             <div class="fs-xs c-lt mt4">Intensität: ${renderIntensitaetBar(s.intensitaet)}</div>
           </div>
-          <button onclick="deleteSym(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px;padding:4px">🗑️</button>
+          <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px">
+            <button onclick="editSym(${s.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:.8rem">✏️</button>
+            <button onclick="deleteSym(${s.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:.8rem">🗑️</button>
+          </div>
         </div>
       </div>`).join('')}` : ''}
 
@@ -2199,7 +2202,10 @@ function renderSymptomZeit() {
               <div class="fs-xs c-lt mt4">${b.desc}</div>
               ${s.notiz?`<div class="fs-xs c-lt mt4">💬 ${esc(s.notiz)}</div>`:''}
             </div>
-            <button onclick="deleteStuhl(${s.id})" style="background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--text-lt);flex-shrink:0;margin-left:8px;padding:4px">🗑️</button>
+            <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px">
+              <button onclick="editStuhl(${s.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:.8rem">✏️</button>
+              <button onclick="deleteStuhl(${s.id})" style="background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:.8rem">🗑️</button>
+            </div>
           </div>
         </div>`;
       }).join('')}` : ''}
@@ -2259,13 +2265,18 @@ function renderIntensitaetBar(val) {
 
 let symForm = { symptome:[], intensitaet:3, uhrzeit:nowTime(), notiz:'', datum:today() };
 let stuhlForm = { bristolTyp:4, uhrzeit:nowTime(), notiz:'', datum:today() };
+let symEditId = null;
+let stuhlEditId = null;
 
 function renderSymForm() {
   if(symFormTyp === 'stuhl') return renderStuhlForm();
+  const isEdit = symEditId !== null;
 
   return `
-    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid var(--border)">
-      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">➕ Symptom erfassen</div>
+    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid ${isEdit?'var(--rose)':'var(--border)'}">
+      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">
+        ${isEdit?'✏️ Symptom bearbeiten':'➕ Symptom erfassen'}
+      </div>
       <div class="g2 mb12">
         <div class="field">
           <label class="label">Uhrzeit</label>
@@ -2293,17 +2304,21 @@ function renderSymForm() {
         <label class="label">Notiz (optional)</label>
         <textarea class="textarea" rows="2" placeholder="z.B. nach dem Kaffee, beim Stress im Büro..." oninput="symForm.notiz=this.value">${esc(symForm.notiz)}</textarea>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="saveSymptom()">✅ Speichern</button>
-        <button class="btn btn-secondary" onclick="symFormOpen=false;renderPage()">Abbrechen</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveSymptom()">${isEdit?'💾 Speichern':'✅ Speichern'}</button>
+        <button class="btn btn-secondary" onclick="symFormOpen=false;symEditId=null;renderPage()">Abbrechen</button>
+        ${isEdit?`<button class="btn btn-secondary" style="color:var(--red);border-color:var(--red)" onclick="if(confirm('Symptom löschen?')){deleteSym(${symEditId})}">🗑️ Löschen</button>`:''}
       </div>
     </div>`;
 }
 
 function renderStuhlForm() {
+  const isEdit = stuhlEditId !== null;
   return `
-    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid var(--border)">
-      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">💩 Stuhlgang erfassen</div>
+    <div style="background:var(--cream);border-radius:14px;padding:16px;border:1.5px solid ${isEdit?'var(--rose)':'var(--border)'}">
+      <div class="fw-7 c-warm mb12" style="font-family:'Playfair Display',serif">
+        ${isEdit?'✏️ Stuhlgang bearbeiten':'💩 Stuhlgang erfassen'}
+      </div>
       <div class="g2 mb14">
         <div class="field">
           <label class="label">Uhrzeit</label>
@@ -2334,22 +2349,52 @@ function renderStuhlForm() {
         <label class="label">Notiz (optional)</label>
         <textarea class="textarea" rows="2" placeholder="z.B. Bauchkrämpfe davor, Schmerzen..." oninput="stuhlForm.notiz=this.value">${esc(stuhlForm.notiz)}</textarea>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="saveStuhl()">✅ Speichern</button>
-        <button class="btn btn-secondary" onclick="symFormOpen=false;renderPage()">Abbrechen</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveStuhl()">${isEdit?'💾 Speichern':'✅ Speichern'}</button>
+        <button class="btn btn-secondary" onclick="symFormOpen=false;stuhlEditId=null;renderPage()">Abbrechen</button>
+        ${isEdit?`<button class="btn btn-secondary" style="color:var(--red);border-color:var(--red)" onclick="if(confirm('Eintrag löschen?')){deleteStuhl(${stuhlEditId})}">🗑️ Löschen</button>`:''}
       </div>
     </div>`;
 }
 
+function editSym(id) {
+  const s = (state.symptomZeit||[]).find(x=>x.id===id);
+  if(!s) return;
+  symEditId = id;
+  symFormTyp = 'symptom';
+  symForm = { symptome:[...(s.symptome||[])], intensitaet:s.intensitaet||3, uhrzeit:s.uhrzeit||nowTime(), notiz:s.notiz||'', datum:s.datum||symDate };
+  symFormOpen = true;
+  symDate = s.datum;
+  renderPage();
+  setTimeout(()=>document.querySelector('.main')?.scrollTo({top:0,behavior:'smooth'}),80);
+}
+
+function editStuhl(id) {
+  const s = (state.stuhlLogs||[]).find(x=>x.id===id);
+  if(!s) return;
+  stuhlEditId = id;
+  symFormTyp = 'stuhl';
+  stuhlForm = { bristolTyp:s.bristolTyp||4, uhrzeit:s.uhrzeit||nowTime(), notiz:s.notiz||'', datum:s.datum||symDate };
+  symFormOpen = true;
+  symDate = s.datum;
+  renderPage();
+  setTimeout(()=>document.querySelector('.main')?.scrollTo({top:0,behavior:'smooth'}),80);
+}
+
 function saveSymptom() {
   if(!symForm.symptome.length) { alert('Bitte mindestens ein Symptom auswählen'); return; }
-  // Datum aus dem Formular nehmen, nicht aus symDate
   const datum = document.getElementById('sym-datum-input')?.value || symForm.datum || symDate;
   const uhrzeit = document.getElementById('sym-uhrzeit-input')?.value || symForm.uhrzeit || nowTime();
-  const entry = { ...symForm, datum, uhrzeit, id: Date.now() };
-  const updated = [...(state.symptomZeit||[]), entry];
+  const entry = { ...symForm, datum, uhrzeit };
+
+  let updated;
+  if(symEditId !== null) {
+    updated = (state.symptomZeit||[]).map(s => s.id===symEditId ? {...s,...entry} : s);
+    symEditId = null;
+  } else {
+    updated = [...(state.symptomZeit||[]), {...entry, id:Date.now()}];
+  }
   save('symptomZeit', updated);
-  // symDate auf das gespeicherte Datum setzen damit Eintrag sofort sichtbar ist
   symDate = datum;
   symForm = { symptome:[], intensitaet:3, uhrzeit:nowTime(), notiz:'', datum:symDate };
   symFormOpen = false;
@@ -2359,8 +2404,15 @@ function saveSymptom() {
 function saveStuhl() {
   const datum = document.getElementById('stuhl-datum-input')?.value || stuhlForm.datum || symDate;
   const uhrzeit = document.getElementById('stuhl-uhrzeit-input')?.value || stuhlForm.uhrzeit || nowTime();
-  const entry = { ...stuhlForm, datum, uhrzeit, id: Date.now() };
-  const updated = [...(state.stuhlLogs||[]), entry];
+  const entry = { ...stuhlForm, datum, uhrzeit };
+
+  let updated;
+  if(stuhlEditId !== null) {
+    updated = (state.stuhlLogs||[]).map(s => s.id===stuhlEditId ? {...s,...entry} : s);
+    stuhlEditId = null;
+  } else {
+    updated = [...(state.stuhlLogs||[]), {...entry, id:Date.now()}];
+  }
   save('stuhlLogs', updated);
   symDate = datum;
   stuhlForm = { bristolTyp:4, uhrzeit:nowTime(), notiz:'', datum:symDate };
@@ -4200,18 +4252,18 @@ function renderBericht() {
 
       <div style="background:#FFF8F0;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:.82rem">
         ⚕️ Klicke auf <strong>PDF</strong> um einen arztgerechten Bericht zu erstellen.
-      </div>
-
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
-        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--warm);margin-bottom:8px">💾 Datensicherung</div>
-        <p class="fs-sm c-lt mb12">Alle deine Einträge als Datei sichern oder wiederherstellen.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="exportData()">📤 Exportieren</button>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📥 Importieren</button>
-        </div>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
-        <p class="fs-xs c-lt mt8">Export = alle Daten als .json Datei · Import = Daten wiederherstellen</p>
       </div>`}
+
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--warm);margin-bottom:8px">💾 Datensicherung</div>
+      <p class="fs-sm c-lt mb12">Alle deine Einträge als Datei sichern oder wiederherstellen.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="exportData()">📤 Exportieren</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📥 Importieren</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      <p class="fs-xs c-lt mt8">Export = alle Daten als .json Datei · Import = Daten wiederherstellen</p>
+    </div>
     </div>
   `;
 }

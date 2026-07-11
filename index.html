@@ -2524,12 +2524,8 @@ function renderTrkForm(emojis, getraenkeEmojis, types) {
         <label class="label">${isGetraenk?'Getränk *':'Name *'}</label>
         <input class="input" id="trkName" value="${esc(trkForm.name)}"
           placeholder="${isGetraenk?'z.B. Kamillentee':'z.B. Lachsfilet mit Zucchini'}"
-          oninput="trkForm.name=this.value;renderPage()">
-        ${rezeptMatches.length ? `
-        <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">
-          <span class="fs-xs c-lt" style="align-self:center">📖 Rezept laden:</span>
-          ${rezeptMatches.map(r=>`<span class="chip" style="font-size:.72rem" onclick="ladeRezeptZutaten(${r.id})">${r.e||r.emoji} ${esc(r.name)}</span>`).join('')}
-        </div>` : ''}
+          oninput="trkForm.name=this.value;updateRezeptVorschlaege(this.value)">
+        <div id="rezept-vorschlaege" style="margin-top:5px"></div>
       </div>
 
       <!-- Typ & Datum/Zeit -->
@@ -2590,9 +2586,28 @@ function renderTrkForm(emojis, getraenkeEmojis, types) {
           <input class="input" id="zutaten-suche" placeholder="Zutat suchen (z.B. Zucchini)..."
             oninput="renderZutatenSuche(this.value)" style="margin-bottom:6px">
           <div id="zutaten-ergebnisse" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
-          <div style="margin-top:6px;display:flex;gap:6px">
-            <input class="input" id="zutaten-eigen" placeholder="Eigene Zutat eingeben..." style="flex:1">
-            <button type="button" class="btn btn-secondary btn-xs" onclick="trkZutatEigenHinzufuegen()">+ OK</button>
+          <div style="margin-top:8px;background:white;border-radius:10px;padding:10px;border:1px solid var(--border)">
+            <div class="fs-xs fw-7 c-lt mb6">Eigene Zutat hinzufügen:</div>
+            <input class="input mb6" id="zutaten-eigen" placeholder="Name der Zutat..." style="margin-bottom:6px">
+            <div class="g2 mb6">
+              <div>
+                <label class="label">FODMAP</label>
+                <select class="select" id="zutaten-eigen-f">
+                  <option value="g">✅ Low-FODMAP</option>
+                  <option value="y" selected>⚠️ Unbekannt</option>
+                  <option value="r">❌ High-FODMAP</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Reflux</label>
+                <select class="select" id="zutaten-eigen-r">
+                  <option value="g">✅ Reflux-OK</option>
+                  <option value="y" selected>⚠️ Unbekannt</option>
+                  <option value="r">❌ Trigger</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-xs" onclick="trkZutatEigenHinzufuegen()">+ Zutat speichern</button>
           </div>
           <button type="button" class="btn btn-secondary btn-xs" style="margin-top:6px" onclick="document.getElementById('zutaten-suche-container').style.display='none'">Schließen</button>
         </div>
@@ -2658,18 +2673,23 @@ function renderZutatenSuche(query) {
   if(!container) return;
   if(!query.trim()) { container.innerHTML=''; return; }
 
-  const treffer = LEBENSMITTEL.filter(l=>
+  // Standard-Lebensmittel + eigene gespeicherte Zutaten
+  const eigeneLm = S.get('dg_eigenezutaten', []);
+  const alleLm = [...LEBENSMITTEL, ...eigeneLm.filter(e=>!LEBENSMITTEL.some(l=>l.name.toLowerCase()===e.name.toLowerCase()))];
+
+  const treffer = alleLm.filter(l=>
     l.name.toLowerCase().includes(query.toLowerCase())
   ).slice(0,8);
 
   container.innerHTML = treffer.map(l=>`
     <div onclick="trkZutatAusListeHinzufuegen('${l.name.replace(/'/g,"\\'")}', '${l.f}', '${l.r}')"
       style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:white;border-radius:8px;border:1px solid var(--border);cursor:pointer">
-      <span>${l.e}</span>
-      <span class="fs-sm fw-7 flex-1">${esc(l.name)}</span>
-      <span class="tag ${tagCls(l.f)}" style="font-size:.6rem">F</span>
-      <span class="tag ${tagCls(l.r)}" style="font-size:.6rem">R</span>
-    </div>`).join('') || '<p class="fs-xs c-lt" style="padding:6px">Nichts gefunden — eigene Zutat eingeben</p>';
+      <span>${l.e||'🥄'}</span>
+      <span class="fs-sm fw-7" style="flex:1">${esc(l.name)}</span>
+      <span class="tag ${tagCls(l.f)}" style="font-size:.6rem">F: ${tagTxt(l.f)}</span>
+      <span class="tag ${tagCls(l.r)}" style="font-size:.6rem">R: ${tagTxt(l.r)}</span>
+      ${l.kat==='Eigene'?'<span class="tag tag-gr" style="font-size:.6rem">Eigene</span>':''}
+    </div>`).join('') || '<p class="fs-xs c-lt" style="padding:6px">Nichts gefunden — eigene Zutat unten eingeben</p>';
 }
 
 function trkZutatAusListeHinzufuegen(name, f, r) {
@@ -2680,15 +2700,32 @@ function trkZutatAusListeHinzufuegen(name, f, r) {
   renderPage();
 }
 
+function updateRezeptVorschlaege(query) {
+  const container = document.getElementById('rezept-vorschlaege');
+  if(!container) return;
+  if(!query || query.length < 2) { container.innerHTML=''; return; }
+  const matches = allRezepte().filter(r=>r.name.toLowerCase().includes(query.toLowerCase())).slice(0,3);
+  if(!matches.length) { container.innerHTML=''; return; }
+  container.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+    <span class="fs-xs c-lt">📖 Rezept laden:</span>
+    ${matches.map(r=>`<span class="chip" style="font-size:.72rem" onclick="ladeRezeptZutaten(${r.id})">${r.e||r.emoji} ${esc(r.name)}</span>`).join('')}
+  </div>`;
+}
+
 function trkZutatEigenHinzufuegen() {
-  const input = document.getElementById('zutaten-eigen');
-  const name = input?.value?.trim();
+  const name  = document.getElementById('zutaten-eigen')?.value?.trim();
+  const f     = document.getElementById('zutaten-eigen-f')?.value || 'y';
+  const r     = document.getElementById('zutaten-eigen-r')?.value || 'y';
   if(!name) return;
   if(!trkForm.zutaten) trkForm.zutaten = [];
   if(!trkForm.zutaten.some(z=>z.name===name)) {
-    trkForm.zutaten = [...trkForm.zutaten, {name, f:'y', r:'y'}];
+    trkForm.zutaten = [...trkForm.zutaten, {name, f, r}];
   }
-  input.value = '';
+  // Eigene Zutat im Lebensmittelverzeichnis merken (für künftige Suche)
+  const eigene = S.get('dg_eigenezutaten', []);
+  if(!eigene.some(z=>z.name.toLowerCase()===name.toLowerCase())) {
+    S.set('dg_eigenezutaten', [...eigene, {name, f, r, kat:'Eigene', e:'🥄'}]);
+  }
   document.getElementById('zutaten-suche-container').style.display='none';
   renderPage();
 }

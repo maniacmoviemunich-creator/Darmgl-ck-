@@ -41,9 +41,35 @@
   --text-lt:  #7A5C4E;
   --border:   #EDD8CA;
   --white:    #FFFFFF;
-  --sh1: 0 2px 12px rgba(104,60,40,.10);
-  --sh2: 0 6px 28px rgba(104,60,40,.14);
-  --r:   16px;
+
+  /* Apple-style elevation: soft, diffuse, low-opacity — same brand-warm tint as before */
+  --sh1: 0 1px 2px rgba(104,60,40,.05), 0 4px 16px rgba(104,60,40,.09);
+  --sh2: 0 2px 6px rgba(104,60,40,.06), 0 10px 32px rgba(104,60,40,.13);
+  --sh-press: 0 1px 3px rgba(104,60,40,.10);
+
+  /* Continuous-corner-style radii (iOS uses generous, consistent rounding) */
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r:    18px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* iOS-standard easing for interactive motion */
+  --ease-ios: cubic-bezier(.32,.72,0,1);
+  --ease-spring: cubic-bezier(.36,1.4,.4,1);
+
+  /* Frosted-glass surfaces, tinted with the brand cream */
+  --glass-bg: rgba(253,246,238,.78);
+  --glass-blur: saturate(180%) blur(20px);
+
+  /* Soft per-tab icon glow — translucent versions of existing brand colors */
+  --glow-rose:  rgba(232,146,124,.6);
+  --glow-sage:  rgba(139,175,141,.55);
+  --glow-sky:   rgba(140,185,207,.6);
+  --glow-lav:   rgba(180,155,207,.6);
+  --glow-red:   rgba(217,116,116,.55);
+  --glow-peach: rgba(230,163,110,.6);
 }
 
 /* ─── RESET ────────────────────────────────────────────────────── */
@@ -65,9 +91,9 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 /* TOP BAR */
 .topbar{
   position:sticky;top:0;z-index:100;
-  background:rgba(253,246,238,.92);
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
   border-bottom:1px solid var(--border);
   padding:14px 18px 12px;
   display:flex;align-items:center;gap:12px;
@@ -80,16 +106,16 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
   font-size:1.2rem;width:36px;height:36px;
   display:flex;align-items:center;justify-content:center;
   border-radius:50%;background:white;box-shadow:var(--sh1);
-  transition:transform .15s;
+  transition:transform .18s var(--ease-spring), box-shadow .18s var(--ease-ios);
 }
-.topbar-btn:hover{transform:scale(1.1);}
+.topbar-btn:active{transform:scale(.88);box-shadow:var(--sh-press);}
 
 /* BOTTOM NAV */
 .bottomnav{
   position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:rgba(253,246,238,.95);
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
   border-top:1px solid var(--border);
   display:flex;
   padding-bottom:env(safe-area-inset-bottom);
@@ -101,15 +127,65 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
   font-family:'Nunito',sans-serif;
   font-size:.62rem;font-weight:700;
   color:var(--text-lt);
-  transition:color .15s;
+  transition:color .15s var(--ease-ios), transform .15s var(--ease-spring);
   letter-spacing:.02em;
+  -webkit-tap-highlight-color:transparent;
 }
+.nav-btn:active{transform:scale(.92);}
 .nav-btn .nav-icon{
   font-size:1.35rem;
-  transition:transform .2s;
+  transition:transform .25s var(--ease-spring);
 }
-.nav-btn.active{color:var(--rose);}
+.nav-btn .nav-icon svg{width:23px;height:23px;display:block;}
+.nav-btn.active{color:var(--tab-accent,var(--rose));}
+.nav-btn.active .nav-icon svg{filter:drop-shadow(0 0 6px var(--tab-glow,var(--glow-rose)));}
 .nav-btn.active .nav-icon{transform:scale(1.18);}
+
+/* MEHR SHEET */
+.mehr-overlay{
+  position:fixed;inset:0;z-index:199;
+  background:rgba(74,58,58,.32);
+  backdrop-filter:blur(3px);
+  opacity:0;pointer-events:none;
+  transition:opacity .25s var(--ease-ios);
+}
+.mehr-overlay.open{opacity:1;pointer-events:auto;}
+.mehr-sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:var(--sh2);
+  padding:10px 14px calc(18px + env(safe-area-inset-bottom));
+  transform:translateY(100%);
+  transition:transform .38s var(--ease-spring);
+}
+.mehr-sheet.open{transform:translateY(0);}
+.mehr-sheet-handle{
+  width:36px;height:5px;border-radius:var(--r-pill);
+  background:var(--border);
+  margin:4px auto 12px;
+}
+.mehr-sheet-title{
+  font-family:'Playfair Display',serif;
+  font-size:1rem;color:var(--warm);
+  margin:0 4px 10px;
+}
+.mehr-item{
+  display:flex;align-items:center;gap:12px;
+  width:100%;background:white;border:none;
+  border-radius:var(--r-sm);padding:13px 14px;margin-bottom:8px;
+  font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:700;
+  color:var(--text);cursor:pointer;
+  box-shadow:var(--sh1);text-align:left;
+  transition:transform .15s var(--ease-spring), background .15s;
+}
+.mehr-item:active{transform:scale(.97);}
+.mehr-item .mehr-icon{font-size:1.25rem;display:flex;}
+.mehr-item .mehr-icon svg{width:21px;height:21px;}
+.mehr-item.active{color:var(--tab-accent,var(--rose));background:#FBEEE8;}
+.mehr-item.active .mehr-icon svg{filter:drop-shadow(0 0 5px var(--tab-glow,var(--glow-rose)));}
 
 /* MAIN SCROLL */
 .main{
@@ -124,12 +200,12 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 /* Cards */
 .card{
   background:var(--white);
-  border-radius:var(--r);
+  border-radius:var(--r-lg);
   box-shadow:var(--sh1);
   padding:18px;
   margin-bottom:14px;
   border:1px solid var(--border);
-  animation:fadeUp .3s ease both;
+  animation:fadeUp .3s var(--ease-ios) both;
 }
 .card-title{
   font-family:'Playfair Display',serif;
@@ -141,21 +217,22 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 /* Buttons */
 .btn{
   display:inline-flex;align-items:center;gap:5px;
-  padding:10px 20px;border-radius:30px;border:none;
+  padding:10px 20px;border-radius:var(--r-pill);border:none;
   cursor:pointer;font-family:'Nunito',sans-serif;
   font-size:.85rem;font-weight:700;
-  transition:all .2s;-webkit-tap-highlight-color:transparent;
+  transition:transform .18s var(--ease-spring), box-shadow .18s var(--ease-ios), background .18s var(--ease-ios);
+  -webkit-tap-highlight-color:transparent;
 }
 .btn-primary{
   background:linear-gradient(135deg,var(--rose),var(--peach));
   color:white;box-shadow:0 3px 14px rgba(232,146,124,.4);
 }
-.btn-primary:active{transform:scale(.96);}
+.btn-primary:active{transform:scale(.94);box-shadow:0 1px 6px rgba(232,146,124,.35);}
 .btn-secondary{
   background:var(--white);color:var(--warm);
   border:1.5px solid var(--border);
 }
-.btn-secondary:active{background:var(--cream-dk);}
+.btn-secondary:active{background:var(--cream-dk);transform:scale(.96);}
 .btn-sage{background:var(--sage);color:white;box-shadow:0 3px 10px rgba(139,175,141,.35);}
 .btn-sm{padding:7px 14px;font-size:.78rem;}
 .btn-xs{padding:5px 10px;font-size:.72rem;}
@@ -166,23 +243,27 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 .input,.textarea,.select{
   width:100%;padding:11px 14px;
   border:1.5px solid var(--border);
-  border-radius:12px;
+  border-radius:var(--r-sm);
   font-family:'Nunito',sans-serif;font-size:.88rem;
   background:var(--cream);color:var(--text);
-  outline:none;transition:border-color .2s;
+  outline:none;transition:border-color .18s var(--ease-ios), box-shadow .18s var(--ease-ios);
   -webkit-appearance:none;appearance:none;
 }
-.input:focus,.textarea:focus,.select:focus{border-color:var(--rose);}
+.input:focus,.textarea:focus,.select:focus{
+  border-color:var(--rose);
+  box-shadow:0 0 0 4px rgba(232,146,124,.14);
+}
 .textarea{resize:vertical;min-height:80px;}
 .label{
   display:block;font-size:.78rem;font-weight:700;
   color:var(--warm-lt);margin-bottom:5px;
 }
-.field{margin-bottom:12px;}
+.field{margin-bottom:12px;display:flex;flex-direction:column;}
+.field .input,.field .textarea,.field .select{margin-top:auto;}
 
 /* Tags */
 .tag{
-  display:inline-block;padding:3px 10px;border-radius:20px;
+  display:inline-block;padding:3px 10px;border-radius:var(--r-pill);
   font-size:.72rem;font-weight:700;
 }
 .tag-g{background:#D6EDD7;color:#2D6B30;}
@@ -195,20 +276,22 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 /* Chips */
 .chip{
   display:inline-flex;align-items:center;
-  padding:6px 13px;border-radius:20px;
+  padding:6px 13px;border-radius:var(--r-pill);
   border:1.5px solid var(--border);
   cursor:pointer;font-size:.78rem;font-weight:600;
   color:var(--text-lt);background:white;
-  transition:all .15s;margin:3px;
+  transition:transform .15s var(--ease-spring), background .15s var(--ease-ios), color .15s var(--ease-ios), border-color .15s var(--ease-ios);
+  margin:3px;
   -webkit-tap-highlight-color:transparent;
 }
+.chip:active{transform:scale(.94);}
 .chip.sel{background:var(--rose);color:white;border-color:var(--rose);}
 
 /* Progress */
-.pbar-wrap{background:var(--warm-pale);border-radius:20px;height:7px;overflow:hidden;}
-.pbar{height:100%;border-radius:20px;
+.pbar-wrap{background:var(--warm-pale);border-radius:var(--r-pill);height:7px;overflow:hidden;}
+.pbar{height:100%;border-radius:var(--r-pill);
   background:linear-gradient(90deg,var(--rose),var(--peach));
-  transition:width .5s ease;}
+  transition:width .5s var(--ease-spring);}
 
 /* Section Header */
 .sect-hd{
@@ -220,39 +303,41 @@ h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2;}
 /* ─── OVERLAYS ──────────────────────────────────────────────────── */
 .overlay{
   position:fixed;inset:0;z-index:500;
-  background:rgba(61,43,31,.5);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
+  background:rgba(61,43,31,.46);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   display:flex;align-items:flex-end;
   padding:0;
-  animation:fadeIn .2s ease;
+  animation:fadeIn .2s var(--ease-ios);
 }
 .overlay.centered{align-items:center;padding:16px;}
 .sheet{
-  background:white;
-  border-radius:24px 24px 0 0;
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
   padding:24px 20px calc(24px + env(safe-area-inset-bottom));
   width:100%;
   max-height:92dvh;
   overflow-y:auto;
-  animation:slideUp .3s cubic-bezier(.34,1.2,.64,1);
+  animation:slideUp .38s var(--ease-spring);
 }
 .sheet.modal-sheet{
-  border-radius:24px;
+  border-radius:var(--r-xl);
   max-height:88dvh;
   width:100%;
   max-width:520px;
   margin:auto;
-  animation:scaleIn .25s ease;
+  animation:scaleIn .25s var(--ease-spring);
 }
 .sheet-handle{
-  width:40px;height:4px;
-  background:var(--warm-pale);border-radius:4px;
+  width:36px;height:5px;
+  background:var(--warm-pale);border-radius:var(--r-pill);
   margin:0 auto 18px;
 }
 
 /* ─── PAGE TRANSITIONS ──────────────────────────────────────────── */
-.page{animation:fadeUp .25s ease both;}
+.page{animation:fadeUp .25s var(--ease-ios) both;}
 
 /* ─── DASHBOARD ─────────────────────────────────────────────────── */
 .dash-hero{
@@ -484,31 +569,43 @@ input[type=checkbox]{
   <main class="main" id="main"></main>
 
   <nav class="bottomnav" id="bottomnav">
-    <button class="nav-btn active" data-page="dashboard" onclick="navigate('dashboard')">
-      <span class="nav-icon">🏠</span>Start
+    <button class="nav-btn active" data-page="dashboard" onclick="navigate('dashboard')" style="--tab-accent:var(--rose);--tab-glow:var(--glow-rose)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11 12 4.5 19.5 11v8a.8.8 0 0 1-.8.8H5.3a.8.8 0 0 1-.8-.8Z"/><circle cx="12" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg></span>Start
     </button>
-    <button class="nav-btn" data-page="lebensmittel" onclick="navigate('lebensmittel')">
-      <span class="nav-icon">🥗</span>Essen
+    <button class="nav-btn" data-page="lebensmittel" onclick="navigate('lebensmittel')" style="--tab-accent:var(--sage);--tab-glow:var(--glow-sage)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18.5C5 11 10 5 18.5 5 19 12.5 14 18.5 6 18.5Z"/></svg></span>Lebensmittel
     </button>
-    <button class="nav-btn" data-page="tracking" onclick="navigate('tracking')">
-      <span class="nav-icon">📝</span>Essen
+    <button class="nav-btn" data-page="tracking" onclick="navigate('tracking')" style="--tab-accent:var(--sky);--tab-glow:var(--glow-sky)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M5 12h14M5 17h8"/></svg></span>Tracking
     </button>
-    <button class="nav-btn" data-page="symptome" onclick="navigate('symptome')">
-      <span class="nav-icon">🩺</span>Symptome
+    <button class="nav-btn" data-page="symptome" onclick="navigate('symptome')" style="--tab-accent:var(--red);--tab-glow:var(--glow-red)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19.5 5 12.7a4.4 4.4 0 0 1 0-6.3 4.3 4.3 0 0 1 6 0l1 1 1-1a4.3 4.3 0 0 1 6 0 4.4 4.4 0 0 1 0 6.3Z"/></svg></span>Symptome
     </button>
-    <button class="nav-btn" data-page="kochbuch" onclick="navigate('kochbuch')">
-      <span class="nav-icon">📖</span>Rezepte
+    <button class="nav-btn" data-page="zyklus" onclick="navigate('zyklus')" style="--tab-accent:var(--lav);--tab-glow:var(--glow-lav)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 4.7A7.7 7.7 0 1 0 19 15.8 6 6 0 0 1 15.2 4.7Z"/><path d="M19.4 4v2M18.4 5h2" stroke-width="1.3"/></svg></span>Zyklus
     </button>
-    <button class="nav-btn" data-page="wochenplan" onclick="navigate('wochenplan')">
-      <span class="nav-icon">📅</span>Woche
-    </button>
-    <button class="nav-btn" data-page="zyklus" onclick="navigate('zyklus')">
-      <span class="nav-icon">🌸</span>Zyklus
-    </button>
-    <button class="nav-btn" data-page="chat" onclick="navigate('chat')">
-      <span class="nav-icon">💬</span>KI-Chat
+    <button class="nav-btn" id="mehr-btn" onclick="openMehr()" style="--tab-accent:var(--peach);--tab-glow:var(--glow-peach)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.5"/><circle cx="17.5" cy="12" r="1.2"/></svg></span>Mehr
     </button>
   </nav>
+
+  <div class="mehr-overlay" id="mehr-overlay" onclick="closeMehr()"></div>
+  <div class="mehr-sheet" id="mehr-sheet">
+    <div class="mehr-sheet-handle"></div>
+    <div class="mehr-sheet-title">Mehr</div>
+    <button class="mehr-item" data-page="kochbuch" onclick="navigate('kochbuch')" style="--tab-accent:var(--peach);--tab-glow:var(--glow-peach)">
+      <span class="mehr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.4 5 8.2 4.6 5.5 4.9v13c2.7-.3 4.9.1 6.5 1.3 1.6-1.2 3.8-1.6 6.5-1.3v-13c-2.7-.3-4.9.1-6.5 1.3Z"/></svg></span>Rezepte
+    </button>
+    <button class="mehr-item" data-page="wochenplan" onclick="navigate('wochenplan')" style="--tab-accent:var(--sky);--tab-glow:var(--glow-sky)">
+      <span class="mehr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="5" width="15" height="14.5" rx="2.5"/><path d="M4.5 9.5h15M8.5 3.5v3M15.5 3.5v3"/><circle cx="12" cy="14.5" r="1.1" fill="currentColor" stroke="none"/></svg></span>Woche
+    </button>
+    <button class="mehr-item" data-page="chat" onclick="navigate('chat')" style="--tab-accent:var(--lav);--tab-glow:var(--glow-lav)">
+      <span class="mehr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.8A2.3 2.3 0 0 1 6.8 4.5h10.4a2.3 2.3 0 0 1 2.3 2.3v6.4a2.3 2.3 0 0 1-2.3 2.3H10l-4 3.1c-.4.3-1 0-1-.5v-2.6a2.3 2.3 0 0 1-1.5-2.2Z"/></svg></span>KI-Chat
+    </button>
+  </div>
+
+
+
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════ -->
@@ -598,7 +695,7 @@ const S = {
 };
 
 // App-Version: Key-Migration bei Update
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.2';
 
 // Neuigkeiten pro Version — wird beim Update-Popup angezeigt
 const VERSION_NOTES = {
@@ -612,6 +709,20 @@ const VERSION_NOTES = {
       { emoji:'🩺', titel:'Symptome bearbeiten', text:'Erfasste Symptome und Stuhlgang-Einträge können jetzt nachträglich bearbeitet werden — genau wie Mahlzeiten.' },
       { emoji:'💧', titel:'Einkaufsliste verbessert', text:'Zutaten werden jetzt intelligent zusammengeführt und nach Supermarkt-Reihenfolge sortiert.' },
       { emoji:'💾', titel:'Datensicherung immer sichtbar', text:'Export & Import sind jetzt immer im Bericht-Tab sichtbar — unabhängig von der Datenmenge.' },
+    ]
+  },
+  '2.1': {
+    titel: '✨ Darmglück 2.1 — Neue Navigation & feineres Design',
+    aenderungen: [
+      { emoji:'🧭', titel:'Schlankere Navigation', text:'Die Leiste unten zeigt jetzt die 5 wichtigsten Bereiche direkt — Rezepte, Woche und KI-Chat findest du übersichtlich im neuen „Mehr"-Menü.' },
+      { emoji:'📱', titel:'Feineres, natives Look & Feel', text:'Milchglas-Effekte, weichere Schatten, großzügigere Rundungen und federnde Antipp-Animationen sorgen für ein Gefühl wie in einer nativen iOS-App — die vertraute Darmglück-Optik bleibt dabei komplett erhalten.' },
+    ]
+  },
+  '2.2': {
+    titel: '🪶 Darmglück 2.2 — Feinschliff',
+    aenderungen: [
+      { emoji:'📐', titel:'Ausrichtung korrigiert', text:'Eingabefelder in Zwei-Spalten-Ansichten (z.B. beim Zyklus) stehen jetzt immer bündig nebeneinander, auch wenn eine Beschriftung länger ist.' },
+      { emoji:'🖋️', titel:'Elegantere Navigations-Icons', text:'Die Symbole in der unteren Leiste und im „Mehr"-Menü sind jetzt dünne, minimalistische Linien-Icons statt Emojis — ruhiger und stimmiger im Look.' },
     ]
   }
 };
@@ -1614,13 +1725,34 @@ function getCurrentPhase(start, len) {
 }
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
+const MEHR_PAGES = ['kochbuch', 'wochenplan', 'chat'];
+
 function navigate(page) {
   state.page = page;
-  document.querySelectorAll('.nav-btn').forEach(b => {
+  const inMehr = MEHR_PAGES.includes(page);
+  document.querySelectorAll('.bottomnav .nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.page === page);
   });
+  const mehrBtn = document.getElementById('mehr-btn');
+  if (mehrBtn) mehrBtn.classList.toggle('active', inMehr);
+  document.querySelectorAll('.mehr-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === page);
+  });
+  closeMehr();
   renderPage();
   document.getElementById('main').scrollTop = 0;
+}
+
+function openMehr() {
+  document.getElementById('mehr-overlay').classList.add('open');
+  document.getElementById('mehr-sheet').classList.add('open');
+}
+
+function closeMehr() {
+  const overlay = document.getElementById('mehr-overlay');
+  const sheet = document.getElementById('mehr-sheet');
+  if (overlay) overlay.classList.remove('open');
+  if (sheet) sheet.classList.remove('open');
 }
 
 function renderPage() {
@@ -3693,7 +3825,7 @@ function renderZyklus() {
     <div class="card">
       <div class="card-title">Zyklus konfigurieren</div>
       <div class="g2">
-        <div class="field"><label class="label">Erster Tag der letzten Periode</label>
+        <div class="field"><label class="label">Letzte Periode (Start)</label>
           <input type="date" class="input" value="${state.zyklusStart}" onchange="save('zyklusStart',this.value);zykManual=null;renderPage()"></div>
         <div class="field"><label class="label">Zykluslänge (Tage)</label>
           <input type="number" class="input" value="${state.zyklusLaenge}" min="21" max="35" onchange="save('zyklusLaenge',Number(this.value));renderPage()"></div>

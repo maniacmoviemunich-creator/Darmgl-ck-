@@ -686,6 +686,24 @@ const VERSION_NOTES = {
   // State mit aktuellen (ggf. migrierten) Werten neu laden
   state.mahlzeiten   = S.get('dg_mahlzeiten', []);
   state.gespeicherteGerichte = S.get('dg_gerichte', []);
+
+  // Bestehende Mahlzeiten nachrüsten: alle bisherigen Gerichte als Schnellauswahl merken
+  if(state.mahlzeiten?.length > 0) {
+    const gerichte = state.gespeicherteGerichte || [];
+    let changed = false;
+    state.mahlzeiten.filter(m => m.typ !== 'Getränke' && m.name?.trim()).forEach(m => {
+      const exists = gerichte.some(g => g.name.toLowerCase() === m.name.toLowerCase());
+      if(!exists) {
+        gerichte.push({ name:m.name, emoji:m.emoji||'🍽️', typ:m.typ||'Frühstück',
+          fodmap:m.fodmap||'g', reflux:m.reflux||'g', zutaten:m.zutaten||[], id:m.id });
+        changed = true;
+      }
+    });
+    if(changed) {
+      state.gespeicherteGerichte = gerichte;
+      S.set('dg_gerichte', gerichte);
+    }
+  }
   state.symptomLogs  = S.get('dg_symptome', []);
   state.wochenplan   = S.get('dg_wochenplan', {});
   state.einkaufsliste= S.get('dg_einkauf', []);
@@ -1070,6 +1088,207 @@ const LEBENSMITTEL = [
   {name:"Speisestärke",kat:"Sonstiges",f:"g",r:"g",e:"🌾",info:"Low-FODMAP Bindemittel."},
   {name:"Gelatine",kat:"Sonstiges",f:"g",r:"g",e:"🍮",info:"Low-FODMAP, proteinhaltig."},
   {name:"Backpulver",kat:"Sonstiges",f:"g",r:"g",e:"🌾",info:"Low-FODMAP in normalen Backmengen."},
+
+  // ── NEU: Erweiterte Lebensmitteldatenbank ────────────────────────
+
+  // Gemüse (weitere)
+  {name:"Mangold",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP. Reich an Magnesium, gut für Darmbewegung."},
+  {name:"Rucola",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP in kleinen Mengen (≤40g). Leicht bitter."},
+  {name:"Chicorée",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP (≤75g). Enthält Inulin bei größeren Mengen."},
+  {name:"Rosenkohl",kat:"Gemüse",f:"r",r:"g",e:"🥦",info:"High-FODMAP (GOS, Fructan). Kann starke Blähungen verursachen."},
+  {name:"Weißkohl",kat:"Gemüse",f:"r",r:"g",e:"🥬",info:"High-FODMAP. Reich an Raffinose → Blähungen."},
+  {name:"Rotkohl",kat:"Gemüse",f:"r",r:"g",e:"🫐",info:"High-FODMAP. Ähnlich wie Weißkohl."},
+  {name:"Wirsing",kat:"Gemüse",f:"r",r:"g",e:"🥬",info:"High-FODMAP. Vorsicht bei Reizdarm."},
+  {name:"Spargel",kat:"Gemüse",f:"r",r:"g",e:"🌿",info:"High-FODMAP (Fructan). Enthält auch Asparagin → harnartig."},
+  {name:"Erbsen (frisch)",kat:"Gemüse",f:"r",r:"g",e:"🫛",info:"High-FODMAP (GOS). Tiefkühl-Erbsen: Low-FODMAP in 45g."},
+  {name:"Erbsen (Dose, abgespült)",kat:"Gemüse",f:"g",r:"g",e:"🫛",info:"Low-FODMAP (≤45g). Gut abspülen reduziert FODMAPs."},
+  {name:"Blattsalat gemischt",kat:"Gemüse",f:"g",r:"g",e:"🥗",info:"Low-FODMAP. Ideal als Basis für Salate."},
+  {name:"Eisbergsalat",kat:"Gemüse",f:"g",r:"g",e:"🥬",info:"Low-FODMAP. Sehr mild, gut verträglich."},
+  {name:"Rote Bete",kat:"Gemüse",f:"y",r:"g",e:"🟣",info:"Moderate FODMAPs (≤45g Low-FODMAP). Färbt stark!"},
+  {name:"Radieschen",kat:"Gemüse",f:"g",r:"y",e:"🔴",info:"Low-FODMAP. Scharf → manche Reflux-Patienten meiden."},
+  {name:"Rettich",kat:"Gemüse",f:"g",r:"y",e:"⚪",info:"Low-FODMAP. Kann Sodbrennen begünstigen."},
+  {name:"Lauch (nur Grünes)",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Nur der grüne Teil ist Low-FODMAP! Weißer Teil: High-FODMAP."},
+  {name:"Frühlingszwiebel (grün)",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Nur grüner Teil Low-FODMAP. Weißer Teil: High-FODMAP (Fructan)."},
+  {name:"Bambussprossen",kat:"Gemüse",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Gut für asiatische Gerichte."},
+  {name:"Wasserkastanien",kat:"Gemüse",f:"g",r:"g",e:"⚪",info:"Low-FODMAP. Asiatische Küche, knackige Textur."},
+  {name:"Artischocke",kat:"Gemüse",f:"r",r:"g",e:"🌿",info:"Sehr High-FODMAP (Fructan, GOS). Einer der stärksten Trigger."},
+  {name:"Knoblauch",kat:"Gemüse",f:"r",r:"y",e:"🧄",info:"Sehr High-FODMAP. Knoblauchöl ist Low-FODMAP (nur Aroma, keine FODMAPs)."},
+  {name:"Zwiebeln",kat:"Gemüse",f:"r",r:"y",e:"🧅",info:"Sehr High-FODMAP (Fructan). Häufigster Reizdarm-Trigger."},
+  {name:"Schalotten",kat:"Gemüse",f:"r",r:"g",e:"🧅",info:"High-FODMAP. Weniger als Zwiebeln aber trotzdem problematisch."},
+  {name:"Meerrettich",kat:"Gemüse",f:"g",r:"y",e:"⚪",info:"Low-FODMAP. Scharf → Reflux möglich."},
+  {name:"Pastinake",kat:"Gemüse",f:"g",r:"g",e:"🥕",info:"Low-FODMAP (≤75g). Süßlich, gut für Wintergerichte."},
+  {name:"Steckrübe",kat:"Gemüse",f:"g",r:"g",e:"🟡",info:"Low-FODMAP. Unterschätzt! Süßlich und winterlich."},
+  {name:"Topinambur",kat:"Gemüse",f:"r",r:"g",e:"🟤",info:"Sehr High-FODMAP (Inulin). Kann starke Blähungen auslösen."},
+  {name:"Yams",kat:"Gemüse",f:"g",r:"g",e:"🟤",info:"Low-FODMAP. Stärkereich, gut verträglich."},
+
+  // Obst (weitere)
+  {name:"Ananas",kat:"Obst",f:"g",r:"r",e:"🍍",info:"Low-FODMAP (≤140g). Enthält Bromelain. Sauer → Reflux."},
+  {name:"Mango",kat:"Obst",f:"r",r:"r",e:"🥭",info:"High-FODMAP bei >65g (Fructose). Sauer → Reflux."},
+  {name:"Papaya",kat:"Obst",f:"g",r:"g",e:"🍈",info:"Low-FODMAP. Enthält Papain → verdauungsfördernd."},
+  {name:"Granatapfel (Kerne)",kat:"Obst",f:"y",r:"r",e:"💎",info:"Moderate FODMAPs. Sauer → Reflux möglich."},
+  {name:"Feigen (frisch)",kat:"Obst",f:"r",r:"g",e:"🫐",info:"High-FODMAP. Getrocknet noch mehr."},
+  {name:"Datteln",kat:"Obst",f:"r",r:"g",e:"🟤",info:"High-FODMAP (Fructose + Polyole). In Maßen bei LF-Ernährung."},
+  {name:"Pflaumen",kat:"Obst",f:"r",r:"g",e:"🫐",info:"High-FODMAP (Sorbit). Starke abführende Wirkung."},
+  {name:"Pfirsich",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbit, Fructose). Sauer → Reflux möglich."},
+  {name:"Nektarine",kat:"Obst",f:"r",r:"y",e:"🍑",info:"High-FODMAP (Sorbit). Wie Pfirsich."},
+  {name:"Aprikosen",kat:"Obst",f:"r",r:"g",e:"🍑",info:"High-FODMAP (Sorbit). Kleine Mengen (<3 Stk) manchmal OK."},
+  {name:"Wassermelone",kat:"Obst",f:"r",r:"r",e:"🍉",info:"High-FODMAP (Fructose) + viel Wasser → Aufstoßen."},
+  {name:"Honigmelone",kat:"Obst",f:"r",r:"g",e:"🍈",info:"High-FODMAP (Fructose). Cantaloupe-Melone besser."},
+  {name:"Cantaloupe-Melone",kat:"Obst",f:"g",r:"g",e:"🍈",info:"Low-FODMAP (≤120g). Die Reizdarm-freundlichste Melone."},
+  {name:"Heidelbeeren",kat:"Obst",f:"g",r:"g",e:"🫐",info:"Low-FODMAP (≤40g). Reich an Antioxidantien."},
+  {name:"Brombeeren",kat:"Obst",f:"g",r:"g",e:"🫐",info:"Low-FODMAP (≤10 Stk). Reich an Polyphenolen."},
+  {name:"Johannisbeeren (schwarz)",kat:"Obst",f:"y",r:"g",e:"🫐",info:"Moderate FODMAPs in größeren Mengen."},
+  {name:"Stachelbeeren",kat:"Obst",f:"g",r:"y",e:"🟢",info:"Low-FODMAP (≤15 Stk). Sauer → manche vertragen schlecht."},
+  {name:"Grapefruit",kat:"Obst",f:"g",r:"r",e:"🍊",info:"Low-FODMAP. Sehr sauer → starker Reflux-Trigger."},
+  {name:"Clementinen",kat:"Obst",f:"g",r:"r",e:"🍊",info:"Low-FODMAP (1 Stk). Sauer → Reflux möglich."},
+  {name:"Kokosnuss (frisch)",kat:"Obst",f:"g",r:"g",e:"🥥",info:"Low-FODMAP (≤30g Fleisch). Kokosmilch: Low-FODMAP (60ml)."},
+  {name:"Reife Mango (kleine Portion)",kat:"Obst",f:"y",r:"r",e:"🥭",info:"In sehr kleinen Mengen (40g) eventuell tolerierbar. Sauer."},
+
+  // Fleisch & Fisch (weitere)
+  {name:"Rinderhackfleisch",kat:"Fleisch",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Fettreich → Reflux bei großen Mengen."},
+  {name:"Lammfleisch",kat:"Fleisch",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Fettreich → Reflux möglich."},
+  {name:"Schweinefleisch (mager)",kat:"Fleisch",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Magere Stücke bei Reflux bevorzugen."},
+  {name:"Speck (Bacon)",kat:"Fleisch",f:"g",r:"r",e:"🥓",info:"Low-FODMAP aber fettreich + salzig → Reflux."},
+  {name:"Salami",kat:"Fleisch",f:"g",r:"r",e:"🍕",info:"Low-FODMAP aber fettreich + Gewürze → Reflux-Trigger."},
+  {name:"Schinken (gekocht)",kat:"Fleisch",f:"g",r:"g",e:"🥩",info:"Low-FODMAP. Magerer Kochschinken gut verträglich."},
+  {name:"Prosciutto",kat:"Fleisch",f:"g",r:"y",e:"🥩",info:"Low-FODMAP. Salzreich → Reflux bei Empfindlichen."},
+  {name:"Hühnerleber",kat:"Fleisch",f:"g",r:"g",e:"🫀",info:"Low-FODMAP. Reich an Eisen, B12, Zink."},
+  {name:"Makrele",kat:"Fisch",f:"g",r:"g",e:"🐟",info:"Low-FODMAP. Reich an Omega-3. Gut verträglich."},
+  {name:"Sardinen (Dose, Öl)",kat:"Fisch",f:"g",r:"y",e:"🐟",info:"Low-FODMAP. Öl → manche Reflux-Empfindliche. In Wasser besser."},
+  {name:"Hering",kat:"Fisch",f:"g",r:"g",e:"🐟",info:"Low-FODMAP. Omega-3 reich."},
+  {name:"Scholle",kat:"Fisch",f:"g",r:"g",e:"🐟",info:"Low-FODMAP. Sehr magerer, milder Fisch."},
+  {name:"Wolfsbarsch",kat:"Fisch",f:"g",r:"g",e:"🐟",info:"Low-FODMAP. Zartes Fleisch, gut verträglich."},
+  {name:"Dorade",kat:"Fisch",f:"g",r:"g",e:"🐟",info:"Low-FODMAP. Sehr mild, für Empfindliche geeignet."},
+  {name:"Muscheln",kat:"Fisch",f:"g",r:"g",e:"🦪",info:"Low-FODMAP. Reich an Zink und Eisen."},
+  {name:"Hummer",kat:"Fisch",f:"g",r:"g",e:"🦞",info:"Low-FODMAP. Teuer aber gut verträglich."},
+  {name:"Tintenfisch (Calamari)",kat:"Fisch",f:"g",r:"g",e:"🦑",info:"Low-FODMAP. Frittiert: Fett → Reflux. Gegrillt: OK."},
+  {name:"Jakobsmuscheln",kat:"Fisch",f:"g",r:"g",e:"🫙",info:"Low-FODMAP. Sehr mild und gut verträglich."},
+
+  // Getreide & Backwaren (weitere)
+  {name:"Mais-Tortillas",kat:"Getreide",f:"g",r:"g",e:"🌽",info:"Low-FODMAP wenn glutenfrei. Gute Alternative zu Weizenbrot."},
+  {name:"Reisbrot",kat:"Getreide",f:"g",r:"g",e:"🍞",info:"Low-FODMAP. Glutenfreie Alternative zu normalem Brot."},
+  {name:"Sauerteigbrot (Weizen, fermentiert)",kat:"Getreide",f:"y",r:"y",e:"🍞",info:"Fermentation reduziert Fructane. Kleine Mengen (1-2 Scheiben) manchmal verträglich."},
+  {name:"Glutenfreies Müsli",kat:"Getreide",f:"y",r:"g",e:"🥣",info:"Je nach Zutaten variierend. Etiketten prüfen!"},
+  {name:"Popcorn (ohne Butter)",kat:"Getreide",f:"g",r:"g",e:"🍿",info:"Low-FODMAP. Guter Snack bei Reizdarm."},
+  {name:"Reisnudeln (breit)",kat:"Getreide",f:"g",r:"g",e:"🍜",info:"Low-FODMAP. Glutenfrei. Breit oder dünn: beides OK."},
+  {name:"Glasnudeln",kat:"Getreide",f:"g",r:"g",e:"🍜",info:"Low-FODMAP (aus Mungbohnen oder Kartoffelstärke)."},
+  {name:"Soba-Nudeln (reines Buchweizen)",kat:"Getreide",f:"g",r:"g",e:"🍜",info:"Low-FODMAP wenn 100% Buchweizen. Mischungen mit Weizen prüfen."},
+  {name:"Tapioka",kat:"Getreide",f:"g",r:"g",e:"⚪",info:"Low-FODMAP Bindemittel aus Maniok. Glutenfrei."},
+  {name:"Arrowroot",kat:"Getreide",f:"g",r:"g",e:"⚪",info:"Low-FODMAP Stärke. Glutenfreies Bindemittel."},
+  {name:"Teff",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Low-FODMAP Urkorn aus Äthiopien. Reich an Kalzium und Eisen."},
+  {name:"Amaranth",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Low-FODMAP. Pseudogetreide, glutenfrei, proteinreich."},
+  {name:"Sorghum",kat:"Getreide",f:"g",r:"g",e:"🌾",info:"Low-FODMAP. Glutenfreies Korn, gut verträglich."},
+
+  // Milchprodukte & Alternativen (weitere)
+  {name:"Cheddar",kat:"Milchprodukte",f:"g",r:"y",e:"🧀",info:"Low-FODMAP (laktosefrei durch Reifung). Fettreich → Reflux möglich."},
+  {name:"Gouda",kat:"Milchprodukte",f:"g",r:"y",e:"🧀",info:"Low-FODMAP (gereifter Käse). Fettreich → Reflux beachten."},
+  {name:"Brie",kat:"Milchprodukte",f:"g",r:"y",e:"🧀",info:"Low-FODMAP (gereifter Weichkäse). Fettreich."},
+  {name:"Camembert",kat:"Milchprodukte",f:"g",r:"y",e:"🧀",info:"Low-FODMAP. Gereifter Käse. Schimmelrinde bei manchen problematisch."},
+  {name:"Frischkäse (laktosefrei)",kat:"Milchprodukte",f:"g",r:"g",e:"🧀",info:"Low-FODMAP wenn laktosefrei. Milder Geschmack."},
+  {name:"Mascarpone (laktosefrei)",kat:"Milchprodukte",f:"g",r:"r",e:"🧀",info:"Low-FODMAP wenn laktosefrei. Sehr fettreich → Reflux."},
+  {name:"Sahne (laktosefrei)",kat:"Milchprodukte",f:"g",r:"r",e:"🥛",info:"Low-FODMAP wenn laktosefrei. Sehr fettreich → Reflux."},
+  {name:"Crème fraîche (laktosefrei)",kat:"Milchprodukte",f:"g",r:"r",e:"🥛",info:"Low-FODMAP wenn laktosefrei. Fettreich → Reflux."},
+  {name:"Sojajoghurt (ohne Inulin)",kat:"Milchprodukte",f:"g",r:"g",e:"🥛",info:"Low-FODMAP wenn aus Sojaprotein (nicht ganzen Bohnen) und ohne Inulin."},
+  {name:"Kokosjoghurt",kat:"Milchprodukte",f:"g",r:"g",e:"🥥",info:"Low-FODMAP. Gute laktosefreie Alternative."},
+  {name:"Hafermilch",kat:"Milchprodukte",f:"y",r:"g",e:"🥛",info:"Moderate FODMAPs (enthält Fructane). In kleinen Mengen (30ml) oft OK."},
+  {name:"Macadamia-Milch",kat:"Milchprodukte",f:"g",r:"g",e:"🥛",info:"Low-FODMAP. Cremig, mild, gut verträglich."},
+  {name:"Cashew-Milch",kat:"Milchprodukte",f:"r",r:"g",e:"🥛",info:"High-FODMAP (GOS). Besser Mandel- oder Macadamia-Milch wählen."},
+  {name:"Laktosefreie Sahne",kat:"Milchprodukte",f:"g",r:"r",e:"🥛",info:"Low-FODMAP. Fettreich → Reflux."},
+
+  // Hülsenfrüchte (weitere)
+  {name:"Kichererbsen (Dose, abgespült, 42g)",kat:"Hülsenfrüchte",f:"g",r:"g",e:"🫘",info:"Low-FODMAP NUR in 42g (3 EL)! Mehr → High-FODMAP."},
+  {name:"Linsen (rot, gut gekocht)",kat:"Hülsenfrüchte",f:"y",r:"g",e:"🫘",info:"Moderate FODMAPs. Kleine Portionen manchmal OK. Gut durchkochen!"},
+  {name:"Edamame (45g)",kat:"Hülsenfrüchte",f:"g",r:"g",e:"🫛",info:"Low-FODMAP in 45g. Mehr → High-FODMAP (GOS)."},
+  {name:"Tofu (fest)",kat:"Hülsenfrüchte",f:"g",r:"g",e:"⬜",info:"Low-FODMAP (aus Sojaprotein). Fest gedrückt am besten."},
+  {name:"Seidentofu",kat:"Hülsenfrüchte",f:"y",r:"g",e:"⬜",info:"Moderate FODMAPs (mehr Wasser, mehr Oligosaccharide)."},
+
+  // Nüsse & Samen (weitere)
+  {name:"Pinienkerne",kat:"Nüsse",f:"g",r:"g",e:"🌰",info:"Low-FODMAP (≤14 Stk). Gut für Pesto."},
+  {name:"Sonnenblumenkerne",kat:"Nüsse",f:"g",r:"g",e:"🌻",info:"Low-FODMAP (2 EL). Proteinreich."},
+  {name:"Weiße Sesampaste (Tahini)",kat:"Nüsse",f:"g",r:"g",e:"🫙",info:"Low-FODMAP (2 EL). Proteinreich, cremig."},
+  {name:"Macadamia-Nüsse",kat:"Nüsse",f:"g",r:"g",e:"🌰",info:"Low-FODMAP (20 Stk). Fettreich aber gut verträglich."},
+  {name:"Pekannüsse",kat:"Nüsse",f:"g",r:"g",e:"🌰",info:"Low-FODMAP (10 Halbstücke). Reich an gesunden Fetten."},
+  {name:"Paranüsse",kat:"Nüsse",f:"g",r:"g",e:"🌰",info:"Low-FODMAP (10 Stk). Sehr reich an Selen."},
+  {name:"Haselnüsse",kat:"Nüsse",f:"g",r:"g",e:"🌰",info:"Low-FODMAP (10 Stk). Gut für Müsli."},
+  {name:"Kokosflocken (ungesüßt)",kat:"Nüsse",f:"g",r:"g",e:"🥥",info:"Low-FODMAP (¼ Tasse). Gut für Porridge und Desserts."},
+  {name:"Flohsamenschalen",kat:"Nüsse",f:"g",r:"g",e:"🌾",info:"Low-FODMAP. Ballaststoff-Supplement, hilft bei Verstopfung UND Durchfall."},
+  {name:"Mohnkörner",kat:"Nüsse",f:"g",r:"g",e:"⚫",info:"Low-FODMAP (2 EL). Gut im Brot oder Desserts."},
+
+  // Öle & Fette (weitere)
+  {name:"Avocadoöl",kat:"Öle",f:"g",r:"g",e:"🫒",info:"Low-FODMAP. Hitzebeständig, gut zum Braten."},
+  {name:"Walnussöl",kat:"Öle",f:"g",r:"g",e:"🌰",info:"Low-FODMAP. Reich an Omega-3. Nur kalt verwenden."},
+  {name:"Leinöl",kat:"Öle",f:"g",r:"g",e:"🌾",info:"Low-FODMAP. Omega-3 reich. Nur kalt, nicht erhitzen!"},
+  {name:"MCT-Öl",kat:"Öle",f:"g",r:"y",e:"🫙",info:"Low-FODMAP. Mittelkettige Fettsäuren. Bei manchen Übelkeit."},
+  {name:"Ghee (geklärte Butter)",kat:"Öle",f:"g",r:"y",e:"🫙",info:"Low-FODMAP (laktosefrei durch Klärung). Fettreich → Reflux möglich."},
+
+  // Gewürze & Kräuter (weitere)
+  {name:"Basilikum (frisch)",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Aromatisch, gut für Darm."},
+  {name:"Oregano",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Auch antioxidativ."},
+  {name:"Rosmarin",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Sehr aromatisch, sparsam verwenden."},
+  {name:"Thymian",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Beruhigt die Atemwege."},
+  {name:"Majoran",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Milder als Oregano."},
+  {name:"Lorbeerblatt",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Nur zum Würzen, nicht essen."},
+  {name:"Fenchelsamen",kat:"Gewürze",f:"g",r:"g",e:"🌱",info:"Low-FODMAP (1 TL). Klassisches Mittel gegen Blähungen."},
+  {name:"Anis",kat:"Gewürze",f:"g",r:"g",e:"⭐",info:"Low-FODMAP. Blähungshemmend wie Fenchel."},
+  {name:"Koriander (gemahlen)",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Würzig-zitrusartig."},
+  {name:"Kumin/Kreuzkümmel",kat:"Gewürze",f:"g",r:"g",e:"⭐",info:"Low-FODMAP. Wichtig in orientalischer Küche."},
+  {name:"Currypulver",kat:"Gewürze",f:"g",r:"y",e:"🟡",info:"Low-FODMAP wenn ohne Zwiebel/Knoblauch. Fertige Mischungen prüfen!"},
+  {name:"Kurkuma (frisch)",kat:"Gewürze",f:"g",r:"g",e:"🟡",info:"Low-FODMAP. Stark entzündungshemmend. Enthält Curcumin."},
+  {name:"Galgant",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Verwandt mit Ingwer, verdauungsfördernd."},
+  {name:"Zitronengras",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Asiatische Küche, frisch-aromatisch."},
+  {name:"Kaffirlimettenblätter",kat:"Gewürze",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Thai-Küche. Intensives Aroma."},
+  {name:"Chili (frisch, ohne Samen)",kat:"Gewürze",f:"g",r:"r",e:"🌶️",info:"Low-FODMAP. Scharf → starker Reflux-Trigger! Samen meiden."},
+  {name:"Chiliflocken",kat:"Gewürze",f:"g",r:"r",e:"🌶️",info:"Low-FODMAP aber scharf → Reflux."},
+  {name:"Paprikapulver (geräuchert)",kat:"Gewürze",f:"g",r:"g",e:"🫑",info:"Low-FODMAP. Rauchiges Aroma ohne Schärfe."},
+  {name:"Safran",kat:"Gewürze",f:"g",r:"g",e:"🟡",info:"Low-FODMAP. Teuerste Gewürz der Welt. Sehr sparsam."},
+  {name:"Sternanis",kat:"Gewürze",f:"g",r:"g",e:"⭐",info:"Low-FODMAP. Süßliches Anis-Aroma."},
+  {name:"Nelken",kat:"Gewürze",f:"g",r:"y",e:"🤎",info:"Low-FODMAP. Intensiv, sehr sparsam verwenden."},
+  {name:"Piment",kat:"Gewürze",f:"g",r:"y",e:"🟤",info:"Low-FODMAP. Schmeckt nach Zimt, Nelken und Pfeffer."},
+
+  // Süßungsmittel (weitere)
+  {name:"Reissirup",kat:"Süßungsmittel",f:"g",r:"y",e:"🍯",info:"Low-FODMAP. Alternative zu Agavensirup. Süßer als Zucker."},
+  {name:"Glukosesirup",kat:"Süßungsmittel",f:"g",r:"g",e:"🍯",info:"Low-FODMAP (Glukose, kein Fruktose-Überschuss)."},
+  {name:"Stevia",kat:"Süßungsmittel",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Kalorienfrei, natürlicher Ursprung."},
+  {name:"Erythrit",kat:"Süßungsmittel",f:"g",r:"g",e:"⬜",info:"Low-FODMAP (kein Polyol-Problem laut Monash). Gut verträglich."},
+  {name:"Xylit (Birkenzucker)",kat:"Süßungsmittel",f:"r",r:"g",e:"⬜",info:"High-FODMAP (Polyol). Kann starken Durchfall verursachen!"},
+  {name:"Sorbit (E420)",kat:"Süßungsmittel",f:"r",r:"g",e:"⬜",info:"High-FODMAP. In Diabetikerprodukten häufig → meiden!"},
+  {name:"Mannitol (E421)",kat:"Süßungsmittel",f:"r",r:"g",e:"⬜",info:"High-FODMAP. Häufig in zuckerfreien Produkten."},
+  {name:"Kokosblütenzucker",kat:"Süßungsmittel",f:"y",r:"y",e:"🟤",info:"Enthält Inulin → moderate FODMAPs. In Maßen."},
+  {name:"Tagatose",kat:"Süßungsmittel",f:"y",r:"g",e:"⬜",info:"Wenig Daten. Ähnlich wie Fruktose → vorsichtig testen."},
+
+  // Getränke (weitere)
+  {name:"Fencheltee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Low-FODMAP. Klassisch bei Blähungen, krampflösend."},
+  {name:"Ingwer-Zitronentee",kat:"Getränke",f:"g",r:"y",e:"🫖",info:"Low-FODMAP. Zitrone säuerlich → Reflux beachten."},
+  {name:"Lindenblütentee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Low-FODMAP. Beruhigend, gut vor dem Schlafen."},
+  {name:"Rooibos-Tee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Low-FODMAP. Koffeinfrei, antioxidativ."},
+  {name:"Lavendeltee",kat:"Getränke",f:"g",r:"g",e:"🫖",info:"Low-FODMAP. Beruhigend, stressreduzierend."},
+  {name:"Schwarztee",kat:"Getränke",f:"g",r:"y",e:"🫖",info:"Low-FODMAP. Koffein → Reflux möglich. Max 1 Tasse."},
+  {name:"Grüner Tee",kat:"Getränke",f:"g",r:"y",e:"🍵",info:"Low-FODMAP. Weniger Koffein als Kaffee aber trotzdem."},
+  {name:"Espresso",kat:"Getränke",f:"g",r:"r",e:"☕",info:"Low-FODMAP aber Koffein → starker Reflux-Trigger."},
+  {name:"Latte Macchiato (Hafermilch)",kat:"Getränke",f:"y",r:"y",e:"☕",info:"Hafermilch hat moderate FODMAPs. Koffein → Reflux."},
+  {name:"Kokoswasser",kat:"Getränke",f:"y",r:"g",e:"🥥",info:"Moderate FODMAPs (≤100ml Low-FODMAP). Elektrolytreich."},
+  {name:"Aloe-Vera-Saft",kat:"Getränke",f:"y",r:"g",e:"🌿",info:"Wenig Monash-Daten. Kann beruhigend auf Darm wirken."},
+  {name:"Ingwerbier (ohne Alkohol)",kat:"Getränke",f:"y",r:"y",e:"🫚",info:"Je nach Zutaten. Ingwer gut, Kohlensäure → Reflux."},
+  {name:"Kefir (laktosefrei)",kat:"Getränke",f:"g",r:"g",e:"🥛",info:"Low-FODMAP wenn laktosefrei. Probiotisch → gut für Darm."},
+  {name:"Kombucha",kat:"Getränke",f:"y",r:"y",e:"🫙",info:"Wenig FODMAP-Daten. Kohlensäure + Essig → Reflux möglich. Probiotisch."},
+
+  // Fertigprodukte & Sonstiges
+  {name:"Reismilch-Pudding",kat:"Sonstiges",f:"g",r:"g",e:"🍮",info:"Low-FODMAP. Sanfter Nachtisch."},
+  {name:"Reiswaffeln (gesalzen)",kat:"Sonstiges",f:"g",r:"g",e:"🍘",info:"Low-FODMAP. Guter Snack, auch für unterwegs."},
+  {name:"Popcorn (Meersalz)",kat:"Sonstiges",f:"g",r:"g",e:"🍿",info:"Low-FODMAP. Vollkorn-Snack."},
+  {name:"Reiscracker",kat:"Sonstiges",f:"g",r:"g",e:"🍘",info:"Low-FODMAP. Knuspriger Snack."},
+  {name:"Nori (Meeresalgen)",kat:"Sonstiges",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Reich an Jod und Mineralstoffen."},
+  {name:"Wakame",kat:"Sonstiges",f:"g",r:"g",e:"🌿",info:"Low-FODMAP. Meeresalge, mineralstoffreich."},
+  {name:"Miso-Paste (1 TL)",kat:"Sonstiges",f:"y",r:"y",e:"🫙",info:"Moderate FODMAPs in größeren Mengen. Fermentiert, probiotisch."},
+  {name:"Tamari (glutenfreie Sojasoße)",kat:"Sonstiges",f:"g",r:"y",e:"🫙",info:"Low-FODMAP wenn glutenfrei. Salzig → Reflux bei Empfindlichen."},
+  {name:"Reisessig",kat:"Sonstiges",f:"g",r:"y",e:"🫙",info:"Low-FODMAP. Mild-sauer, besser als Weinessig bei Reflux."},
+  {name:"Balsamico (1 EL)",kat:"Sonstiges",f:"y",r:"r",e:"🫙",info:"Moderate FODMAPs (≤1 EL). Sauer + süß → Reflux."},
+  {name:"Fischsoße",kat:"Sonstiges",f:"g",r:"y",e:"🫙",info:"Low-FODMAP in normalen Mengen. Sehr salzig."},
+  {name:"Kokosaminos",kat:"Sonstiges",f:"g",r:"g",e:"🫙",info:"Low-FODMAP. Sojasoßen-Alternative ohne Soja."},
+  {name:"Hefeflocken",kat:"Sonstiges",f:"g",r:"g",e:"🟡",info:"Low-FODMAP (2 EL). Reich an B-Vitaminen. Käseartig."},
+  {name:"Knoblauchöl (selbst gemacht)",kat:"Sonstiges",f:"g",r:"y",e:"🫒",info:"Low-FODMAP! FODMAPs sind nicht öllöslich → nur Aroma überträgt sich."},
+  {name:"Zwiebelpulver",kat:"Sonstiges",f:"r",r:"y",e:"⬜",info:"High-FODMAP! Konzentrierte Fructane. Knoblauchpulver ebenfalls meiden."},
+  {name:"Worcestersauce",kat:"Sonstiges",f:"y",r:"r",e:"🫙",info:"Moderate FODMAPs (enthält Zwiebeln). Sauer + würzig → Reflux."},
 ];
 
 const REZEPTE = [
@@ -2895,14 +3114,18 @@ function saveMahlzeit() {
     save('mahlzeiten', [...state.mahlzeiten, { ...updated, id: Date.now() }]);
   }
 
-  // Gericht automatisch in Schnellauswahl speichern (wenn Zutaten vorhanden)
-  if(updated.zutaten?.length > 0 && updated.typ !== 'Getränke') {
+  // Gericht automatisch in Schnellauswahl speichern (IMMER wenn Mahlzeit, nicht nur mit Zutaten)
+  if(updated.typ !== 'Getränke' && name.trim()) {
     const gerichte = state.gespeicherteGerichte || [];
     const existing = gerichte.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
-    const gericht = { name, emoji, typ: updated.typ, fodmap: updated.fodmap, reflux: updated.reflux, zutaten: updated.zutaten };
+    const gericht = { name, emoji, typ: updated.typ, fodmap: updated.fodmap, reflux: updated.reflux, zutaten: updated.zutaten || [] };
     if(existing >= 0) {
-      // Zutaten aktualisieren wenn Gericht schon bekannt
-      gerichte[existing] = { ...gerichte[existing], ...gericht };
+      // Aktualisieren — neuere Zutaten bevorzugen wenn vorhanden
+      const merged = { ...gerichte[existing], ...gericht };
+      if(!merged.zutaten?.length && gerichte[existing].zutaten?.length) {
+        merged.zutaten = gerichte[existing].zutaten; // alte Zutaten behalten
+      }
+      gerichte[existing] = merged;
       save('gespeicherteGerichte', [...gerichte]);
     } else {
       save('gespeicherteGerichte', [...gerichte, { ...gericht, id: Date.now() }]);
